@@ -16,12 +16,11 @@
  * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
  */
 
 package com.trowelanderror.item;
 
+import com.trowelanderror.util.VariantConfig;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.sounds.SoundSource;
@@ -36,12 +35,15 @@ import net.minecraft.world.level.material.FluidState;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
-public class FillDownTrowelItem extends Item {
+public class RandomFillDownTrowelItem extends Item {
 
     private static final int MAX_FILL_DEPTH = 512;
+    private static final Random RANDOM = new Random();
+    private static final double VARIANT_CHANCE = 0.2;
 
-    public FillDownTrowelItem(Properties properties) {
+    public RandomFillDownTrowelItem(Properties properties) {
         super(properties);
     }
 
@@ -58,32 +60,30 @@ public class FillDownTrowelItem extends Item {
         BlockState baseState = level.getBlockState(clickedPos);
         if (baseState.isAir()) return InteractionResult.PASS;
 
+        List<BlockState> variants = VariantConfig.getVariantStates(baseState.getBlock());
+
         int placed = 0;
 
         if (face == Direction.UP && player != null) {
-            // Top face: forward strip (3 wide) + side columns (left/right of clicked)
             Direction facing = player.getDirection();
             BlockPos forwardCenter = clickedPos.relative(facing);
             Direction left = facing.getCounterClockWise();
             Direction right = facing.getClockWise();
 
             List<BlockPos> starts = new ArrayList<>();
-            // Forward strip
             starts.add(forwardCenter);
             starts.add(forwardCenter.relative(left));
             starts.add(forwardCenter.relative(right));
 
-            // Side columns – include if replaceable (air, water, lava)
             BlockPos sideLeft = clickedPos.relative(left);
             BlockPos sideRight = clickedPos.relative(right);
             if (isReplaceable(level, sideLeft)) starts.add(sideLeft);
             if (isReplaceable(level, sideRight)) starts.add(sideRight);
 
-            placed += fillDownStrip(level, starts.toArray(new BlockPos[0]), baseState);
+            placed += fillDownStrip(level, starts.toArray(new BlockPos[0]), baseState, variants);
         } else {
-            // Side face: single column
             BlockPos startPos = clickedPos.relative(face);
-            placed += fillDownStrip(level, new BlockPos[]{startPos}, baseState);
+            placed += fillDownStrip(level, new BlockPos[]{startPos}, baseState, variants);
         }
 
         if (placed > 0) {
@@ -95,16 +95,20 @@ public class FillDownTrowelItem extends Item {
         return placed > 0 ? InteractionResult.SUCCESS : InteractionResult.PASS;
     }
 
-    private int fillDownStrip(Level level, BlockPos[] starts, BlockState fillState) {
+    private int fillDownStrip(Level level, BlockPos[] starts, BlockState baseState, List<BlockState> variants) {
         int placed = 0;
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
 
         for (BlockPos startPos : starts) {
             for (int y = startPos.getY(); y >= level.getMinY() && placed < MAX_FILL_DEPTH; y--) {
                 cursor.set(startPos.getX(), y, startPos.getZ());
-                // Stop if we hit a solid block (not replaceable)
                 if (!isReplaceable(level, cursor)) break;
-                level.setBlockAndUpdate(cursor, fillState);
+
+                BlockState stateToPlace = baseState;
+                if (!variants.isEmpty() && RANDOM.nextDouble() < VARIANT_CHANCE) {
+                    stateToPlace = variants.get(RANDOM.nextInt(variants.size()));
+                }
+                level.setBlockAndUpdate(cursor, stateToPlace);
                 placed++;
             }
         }

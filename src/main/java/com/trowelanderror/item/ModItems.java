@@ -22,6 +22,7 @@
 
 package com.trowelanderror.item;
 
+import com.azure.json.implementation.jackson.core.TreeNode;
 import com.trowelanderror.TrowelAndError;
 import net.minecraft.world.item.Item;
 import net.minecraftforge.registries.DeferredRegister;
@@ -60,5 +61,24 @@ public class ModItems {
     public static final RegistryObject<Item> DIGGER_TROWEL = ITEMS.register("digger_trowel",
             () -> new DiggerTrowelItem(new Item.Properties()
                     .setId(ITEMS.key("digger_trowel"))
+                    .stacksTo(1)));
+
+    public static final RegistryObject<Item> RANDOM_UNIVERSAL_FILL_TROWEL = ITEMS.register("ranom_universal_fill_trowel",
+            () -> new RandomUniversalFillTrowelItem(new Item.Properties()
+                    .setId(ITEMS.key("random_universal_fill_trowel"))
+                    .stacksTo(1)));
+
+    public static final RegistryObject<Item> RANDOM_FILL_DOWN_TROWEL = ITEMS.register("random_fill_down_trowel",
+            () -> new RandomFillDownTrowelItem(new Item.Properties()
+                    .setId(ITEMS.key("random_fill_down_trowel"))
+                    .stacksTo(1)));
+
+    public static final RegistryObject<Item> RANDOM_EXCHANGE_TROWEL = ITEMS.register("random_exchange_trowel",
+            () -> new RandomExchangeTrowelItem(new Item.Properties()
+                    .setId(ITEMS.key("random_exchange_trowel"))
+                    .stacksTo(1)));
+    public static final RegistryObject<Item> FIRE_TROWEL = ITEMS.register("fire_trowel",
+            () -> new FireTrowelItem(new Item.Properties()
+                    .setId(ITEMS.key("fire_trowel"))
                     .stacksTo(1)));
 }

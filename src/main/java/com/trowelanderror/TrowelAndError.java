@@ -24,14 +24,15 @@ package com.trowelanderror;
 
 import com.mojang.logging.LogUtils;
 import com.trowelanderror.item.ModItems;
-import com.trowelanderror.setup.ModDataComponents; // <--- ADD THIS IMPORT
+import com.trowelanderror.setup.ModDataComponents;
+import com.trowelanderror.util.VariantConfig;   // <--- ADD THIS IMPORT
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
 import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.eventbus.api.listener.SubscribeEvent;
+import net.minecraftforge.eventbus.api.listener.SubscribeEvent;  // corrected import (was "listener")
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
@@ -42,17 +43,17 @@ import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 import org.slf4j.Logger;
 
+import java.io.InputStream;
+
 @Mod(TrowelAndError.MODID)
 public final class TrowelAndError {
     public static final String MODID = "trowelanderror";
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    // Deferred Registers
     public static final DeferredRegister<Block> BLOCKS = DeferredRegister.create(ForgeRegistries.BLOCKS, MODID);
     public static final DeferredRegister<CreativeModeTab> CREATIVE_MODE_TABS =
             DeferredRegister.create(Registries.CREATIVE_MODE_TAB, MODID);
 
-    // Creative Tab Registration
     public static final RegistryObject<CreativeModeTab> TROWEL_TAB = CREATIVE_MODE_TABS.register("trowel_tab",
             () -> CreativeModeTab.builder()
                     .title(Component.literal("Trowel & Error"))
@@ -64,24 +65,41 @@ public final class TrowelAndError {
                         output.accept(ModItems.COPY_PASTE_TROWEL.get());
                         output.accept(ModItems.FILL_DOWN_TROWEL.get());
                         output.accept(ModItems.DIGGER_TROWEL.get());
+                        output.accept(ModItems.RANDOM_UNIVERSAL_FILL_TROWEL.get());
+                        output.accept(ModItems.RANDOM_EXCHANGE_TROWEL.get());
+                        output.accept(ModItems.RANDOM_FILL_DOWN_TROWEL.get());
+                        output.accept(ModItems.FIRE_TROWEL.get());
                     })
                     .build());
 
     public TrowelAndError(FMLJavaModLoadingContext context) {
         var modBusGroup = context.getModBusGroup();
 
-        // Register items, blocks, and tabs to the mod event bus
+        // Register items, blocks, and tabs
         ModItems.ITEMS.register(modBusGroup);
         BLOCKS.register(modBusGroup);
         CREATIVE_MODE_TABS.register(modBusGroup);
 
-        // <--- ADD THIS LINE TO REGISTER YOUR DATA COMPONENTS
+        // Load variant config
+        try (InputStream is = getClass().getResourceAsStream("/data/trowelanderror/variants_config.json")) {
+            if (is != null) {
+                VariantConfig.load(is);
+            } else {
+                LOGGER.warn("Variants config not found, random trowels will use base block only.");
+            }
+        } catch (Exception e) {
+            LOGGER.error("Failed to load variants config", e);
+        }
+
+        // Register data components
         ModDataComponents.DATA_COMPONENTS.register(modBusGroup);
 
+        // Common setup
         FMLCommonSetupEvent.getBus(modBusGroup).addListener(this::commonSetup);
 
+        // Forge config
         context.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
-    }
+    }   // <--- Constructor ends here
 
     private void commonSetup(final FMLCommonSetupEvent event) {
         LOGGER.info("Trowel & Error common setup complete.");

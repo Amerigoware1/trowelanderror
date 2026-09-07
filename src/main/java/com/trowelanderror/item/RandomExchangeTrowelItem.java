@@ -16,12 +16,11 @@
  * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
  */
 
 package com.trowelanderror.item;
 
+import com.trowelanderror.util.VariantConfig;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -39,11 +38,15 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 
-public class ExchangeTrowelItem extends BaseTrowelItem {
+import java.util.List;
+import java.util.Random;
+
+public class RandomExchangeTrowelItem extends BaseTrowelItem {
 
     private static final int MAX_VOLUME = 32768;
+    private static final Random RANDOM = new Random();
 
-    public ExchangeTrowelItem(Properties properties) {
+    public RandomExchangeTrowelItem(Properties properties) {
         super(properties);
     }
 
@@ -78,7 +81,6 @@ public class ExchangeTrowelItem extends BaseTrowelItem {
         boolean hasPos1 = tag.contains("pos1_x");
         boolean hasPos2 = tag.contains("pos2_x");
 
-        // --- STATE 0: No source → set source and Point A ---
         if (sourceId.isEmpty()) {
             String newSourceId = BuiltInRegistries.BLOCK.getKey(clickedState.getBlock()).toString();
             CustomData.update(DataComponents.CUSTOM_DATA, stack, nbt -> {
@@ -93,7 +95,6 @@ public class ExchangeTrowelItem extends BaseTrowelItem {
             return InteractionResult.SUCCESS;
         }
 
-        // --- STATE 1: Source set, no target → set target ---
         if (targetId.isEmpty()) {
             String newTargetId = BuiltInRegistries.BLOCK.getKey(clickedState.getBlock()).toString();
             CustomData.update(DataComponents.CUSTOM_DATA, stack, nbt -> {
@@ -105,16 +106,13 @@ public class ExchangeTrowelItem extends BaseTrowelItem {
             return InteractionResult.SUCCESS;
         }
 
-        // --- STATE 2: Both set, but no Point B yet → set Point B and execute ---
         if (!hasPos2) {
-            // Store Point B
             CustomData.update(DataComponents.CUSTOM_DATA, stack, nbt -> {
                 nbt.putInt("pos2_x", clickedPos.getX());
                 nbt.putInt("pos2_y", clickedPos.getY());
                 nbt.putInt("pos2_z", clickedPos.getZ());
             });
-            // We need to re-read the tag after update or just use the stored values
-            // We'll read them now
+
             BlockPos pos1 = new BlockPos(
                     tag.getInt("pos1_x").orElse(0),
                     tag.getInt("pos1_y").orElse(0),
@@ -122,7 +120,6 @@ public class ExchangeTrowelItem extends BaseTrowelItem {
             );
             BlockPos pos2 = clickedPos;
 
-            // Resolve blocks
             Block sourceBlock = BuiltInRegistries.BLOCK.get(Identifier.parse(sourceId))
                     .map(ref -> ref.value()).orElse(Blocks.AIR);
             Block targetBlock = BuiltInRegistries.BLOCK.get(Identifier.parse(targetId))
@@ -134,13 +131,12 @@ public class ExchangeTrowelItem extends BaseTrowelItem {
                 return InteractionResult.FAIL;
             }
 
-            exchangeBox(level, pos1, pos2, sourceBlock, targetBlock.defaultBlockState(), player);
+            exchangeBoxWithVariants(level, pos1, pos2, sourceBlock, targetBlock, player);
 
             clearSelection(stack);
             return InteractionResult.SUCCESS;
         }
 
-        // Fallback – should not reach
         return InteractionResult.PASS;
     }
 
@@ -157,7 +153,8 @@ public class ExchangeTrowelItem extends BaseTrowelItem {
         });
     }
 
-    private void exchangeBox(Level level, BlockPos pos1, BlockPos pos2, Block sourceBlock, BlockState targetState, Player player) {
+    private void exchangeBoxWithVariants(Level level, BlockPos pos1, BlockPos pos2,
+                                         Block sourceBlock, Block targetBlock, Player player) {
         int minX = Math.min(pos1.getX(), pos2.getX());
         int minY = Math.min(pos1.getY(), pos2.getY());
         int minZ = Math.min(pos1.getZ(), pos2.getZ());
@@ -172,18 +169,25 @@ public class ExchangeTrowelItem extends BaseTrowelItem {
             return;
         }
 
+        List<BlockState> variants = VariantConfig.getVariantStates(targetBlock);
+        BlockState baseTarget = targetBlock.defaultBlockState();
+
         int changed = 0;
         for (int x = minX; x <= maxX; x++) {
             for (int y = minY; y <= maxY; y++) {
                 for (int z = minZ; z <= maxZ; z++) {
                     BlockPos pos = new BlockPos(x, y, z);
                     if (level.getBlockState(pos).getBlock() == sourceBlock) {
-                        level.setBlock(pos, targetState, 3);
+                        BlockState stateToPlace = baseTarget;
+                        if (!variants.isEmpty() && RANDOM.nextDouble() < 0.2) {
+                            stateToPlace = variants.get(RANDOM.nextInt(variants.size()));
+                        }
+                        level.setBlock(pos, stateToPlace, 3);
                         changed++;
                     }
                 }
             }
         }
-        player.displayClientMessage(Component.literal("Exchanged " + changed + " blocks."), true);
+        player.displayClientMessage(Component.literal("Exchanged " + changed + " blocks (with random variants)."), true);
     }
 }

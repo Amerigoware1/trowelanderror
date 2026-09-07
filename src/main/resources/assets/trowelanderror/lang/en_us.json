@@ -5,5 +5,9 @@
   "item.trowelanderror.air_trowel": "Air Trowel",
   "item.trowelanderror.exchange_trowel": "Exchange Trowel",
   "item.trowelanderror.digger_trowel": "Digger Trowel",
+  "item.trowelanderror.random_fill_down_trowel": "Random Fill Down Trowel",
+  "item.trowelanderror.random_universal_fill_trowel": "Random Universal Fill Trowel",
+  "item.trowelanderror.random_exchange_trowel": "Random Exchange Trowel",
+  "item.trowelanderror.fire_trowel": "Fire Trowel",
   "key.cubedigger.hud": "Toggle Digger HUD"
 }

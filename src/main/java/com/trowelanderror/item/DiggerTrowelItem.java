@@ -23,34 +23,39 @@
 package com.trowelanderror.item;
 
 import com.trowelanderror.data.DiggerSettings;
+import com.trowelanderror.history.BlockChange;
+import com.trowelanderror.history.HistoryManager;
 import com.trowelanderror.setup.ModDataComponents;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.tags.TagKey;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.core.Direction;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.Identifier;
-import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+
 import java.util.ArrayList;
 import java.util.List;
 
 public class DiggerTrowelItem extends Item {
 
-    public DiggerTrowelItem(Properties props) {
-        super(props);
-    }
     // #minecraft:ores (vanilla) and #c:ores (the convention tag modded ores use)
     private static final TagKey<Block> VANILLA_ORES =
             TagKey.create(Registries.BLOCK, Identifier.fromNamespaceAndPath("minecraft", "ores"));
     private static final TagKey<Block> COMMON_ORES =
             TagKey.create(Registries.BLOCK, Identifier.fromNamespaceAndPath("c", "ores"));
+
+    public DiggerTrowelItem(Properties props) {
+        super(props);
+    }
+
     public static DiggerSettings getSettings(ItemStack stack) {
         return stack.getOrDefault(ModDataComponents.DIGGER_SETTINGS.get(), DiggerSettings.DEFAULT);
     }
@@ -73,21 +78,29 @@ public class DiggerTrowelItem extends Item {
 
         DiggerSettings settings = getSettings(stack);
 
-        // inside useOn, replace the mask switch + loop with:
         List<BlockPos> mask = buildMask(clicked, context.getClickedFace(), settings);
 
+        List<BlockChange> changes = new ArrayList<>();
         int broken = 0;
+
         for (BlockPos pos : mask) {
             BlockState st = level.getBlockState(pos);
             if (st.isAir()) continue;
             if (settings.spareOres() && (st.is(VANILLA_ORES) || st.is(COMMON_ORES))) continue;
+
+            // Record the block before destroying it
+            changes.add(new BlockChange(pos, st));
             level.destroyBlock(pos, true, player);
             broken++;
         }
 
+        // Save history for the Undo Trowel
+        if (!changes.isEmpty() && level.getServer() != null) {
+            HistoryManager.getInstance(level.getServer())
+                    .recordAction("digger", changes);
+        }
+
         if (broken > 0) {
-            // getSoundType() is deprecated in 1.21.x; if your build flags it as
-            // removed, swap the argument for SoundEvents.STONE_BREAK.
             level.playSound(null, clicked,
                     clickedState.getSoundType().getBreakSound(),
                     SoundSource.BLOCKS, 1.0F, 1.0F);

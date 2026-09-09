@@ -22,6 +22,8 @@
 
 package com.trowelanderror.item;
 
+import com.trowelanderror.history.BlockChange;
+import com.trowelanderror.history.HistoryManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -38,6 +40,9 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class ExchangeTrowelItem extends BaseTrowelItem {
 
@@ -75,7 +80,6 @@ public class ExchangeTrowelItem extends BaseTrowelItem {
 
         String sourceId = tag.getString("source_block").orElse("");
         String targetId = tag.getString("target_block").orElse("");
-        boolean hasPos1 = tag.contains("pos1_x");
         boolean hasPos2 = tag.contains("pos2_x");
 
         // --- STATE 0: No source → set source and Point A ---
@@ -107,14 +111,12 @@ public class ExchangeTrowelItem extends BaseTrowelItem {
 
         // --- STATE 2: Both set, but no Point B yet → set Point B and execute ---
         if (!hasPos2) {
-            // Store Point B
             CustomData.update(DataComponents.CUSTOM_DATA, stack, nbt -> {
                 nbt.putInt("pos2_x", clickedPos.getX());
                 nbt.putInt("pos2_y", clickedPos.getY());
                 nbt.putInt("pos2_z", clickedPos.getZ());
             });
-            // We need to re-read the tag after update or just use the stored values
-            // We'll read them now
+
             BlockPos pos1 = new BlockPos(
                     tag.getInt("pos1_x").orElse(0),
                     tag.getInt("pos1_y").orElse(0),
@@ -122,7 +124,6 @@ public class ExchangeTrowelItem extends BaseTrowelItem {
             );
             BlockPos pos2 = clickedPos;
 
-            // Resolve blocks
             Block sourceBlock = BuiltInRegistries.BLOCK.get(Identifier.parse(sourceId))
                     .map(ref -> ref.value()).orElse(Blocks.AIR);
             Block targetBlock = BuiltInRegistries.BLOCK.get(Identifier.parse(targetId))
@@ -140,7 +141,6 @@ public class ExchangeTrowelItem extends BaseTrowelItem {
             return InteractionResult.SUCCESS;
         }
 
-        // Fallback – should not reach
         return InteractionResult.PASS;
     }
 
@@ -157,7 +157,8 @@ public class ExchangeTrowelItem extends BaseTrowelItem {
         });
     }
 
-    private void exchangeBox(Level level, BlockPos pos1, BlockPos pos2, Block sourceBlock, BlockState targetState, Player player) {
+    private void exchangeBox(Level level, BlockPos pos1, BlockPos pos2,
+                             Block sourceBlock, BlockState targetState, Player player) {
         int minX = Math.min(pos1.getX(), pos2.getX());
         int minY = Math.min(pos1.getY(), pos2.getY());
         int minZ = Math.min(pos1.getZ(), pos2.getZ());
@@ -172,18 +173,32 @@ public class ExchangeTrowelItem extends BaseTrowelItem {
             return;
         }
 
-        int changed = 0;
+        List<BlockChange> changes = new ArrayList<>();
+
         for (int x = minX; x <= maxX; x++) {
             for (int y = minY; y <= maxY; y++) {
                 for (int z = minZ; z <= maxZ; z++) {
                     BlockPos pos = new BlockPos(x, y, z);
-                    if (level.getBlockState(pos).getBlock() == sourceBlock) {
-                        level.setBlock(pos, targetState, 3);
-                        changed++;
+                    BlockState old = level.getBlockState(pos);
+
+                    // Only exchange the source block
+                    if (old.getBlock() == sourceBlock) {
+                        if (!old.equals(targetState)) {
+                            changes.add(new BlockChange(pos, old));
+                            level.setBlock(pos, targetState, 3);
+                        }
                     }
                 }
             }
         }
-        player.displayClientMessage(Component.literal("Exchanged " + changed + " blocks."), true);
+
+        // Record for Undo Trowel
+        if (!changes.isEmpty() && level.getServer() != null) {
+            HistoryManager.getInstance(level.getServer())
+                    .recordAction("exchange", changes);
+        }
+
+        player.displayClientMessage(
+                Component.literal("Exchanged " + changes.size() + " blocks."), true);
     }
 }

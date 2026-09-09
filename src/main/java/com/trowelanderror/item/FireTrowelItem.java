@@ -155,3 +155,81 @@ public class FireTrowelItem extends BaseTrowelItem {
         return InteractionResult.SUCCESS;
     }
 }
+/*package com.trowelanderror.item;
+
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.projectile.SmallFireball;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.Vec3;
+
+public class FireTrowelItem extends BaseTrowelItem {
+
+    private static final double SPEED = 1.5D;
+
+    public FireTrowelItem(Properties properties) {
+        super(properties);
+    }
+
+    @Override
+    public InteractionResult use(Level level, Player player, InteractionHand hand) {
+        ItemStack stack = player.getItemInHand(hand);
+
+        if (level.isClientSide()) {
+            return InteractionResult.PASS;
+        }
+
+        Vec3 look = player.getLookAngle();
+
+        // Spawn slightly in front of the player's eyes
+        Vec3 spawnPos = player.getEyePosition().add(look.scale(0.5D));
+
+        // Forge 61 constructor:
+        // SmallFireball(Level, LivingEntity owner, double accelX, double accelY, double accelZ)
+        SmallFireball fireball = new SmallFireball(
+                level,
+                player,
+                look.x * 0.1,
+                look.y * 0.1,
+                look.z * 0.1
+        );
+
+        // Position the fireball at the spawn point
+        fireball.setPos(spawnPos.x, spawnPos.y, spawnPos.z);
+
+        // Forge does NOT have assignDirectionalMovement — use setDeltaMovement
+        fireball.setDeltaMovement(look.scale(SPEED));
+
+        // Add entity to world
+        level.addFreshEntity(fireball);
+
+        // Play blaze-shoot sound
+        level.playSound(
+                null,
+                player.getX(), player.getY(), player.getZ(),
+                SoundEvents.BLAZE_SHOOT,
+                SoundSource.PLAYERS,
+                1.0F,
+                1.0F
+        );
+
+        // Flame particles
+        if (level instanceof net.minecraft.server.level.ServerLevel serverLevel) {
+            serverLevel.sendParticles(
+                    ParticleTypes.FLAME,
+                    spawnPos.x, spawnPos.y, spawnPos.z,
+                    4,
+                    0.0, 0.0, 0.0,
+                    0.02
+            );
+        }
+
+        return InteractionResult.SUCCESS;
+    }
+}*/
+

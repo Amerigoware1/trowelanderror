@@ -48,7 +48,7 @@ import java.io.InputStream;
 @Mod(TrowelAndError.MODID)
 public final class TrowelAndError {
     public static final String MODID = "trowelanderror";
-    private static final Logger LOGGER = LogUtils.getLogger();
+    public static final Logger LOGGER = LogUtils.getLogger();
 
     public static final DeferredRegister<Block> BLOCKS = DeferredRegister.create(ForgeRegistries.BLOCKS, MODID);
     public static final DeferredRegister<CreativeModeTab> CREATIVE_MODE_TABS =
@@ -69,6 +69,7 @@ public final class TrowelAndError {
                         output.accept(ModItems.RANDOM_EXCHANGE_TROWEL.get());
                         output.accept(ModItems.RANDOM_FILL_DOWN_TROWEL.get());
                         output.accept(ModItems.FIRE_TROWEL.get());
+                        output.accept(ModItems.UNDO_TROWEL.get());
                     })
                     .build());
 

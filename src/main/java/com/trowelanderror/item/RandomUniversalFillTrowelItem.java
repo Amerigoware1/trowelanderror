@@ -22,6 +22,8 @@
 
 package com.trowelanderror.item;
 
+import com.trowelanderror.history.BlockChange;
+import com.trowelanderror.history.HistoryManager;
 import com.trowelanderror.util.VariantConfig;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
@@ -41,6 +43,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.Blocks;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
@@ -141,7 +144,7 @@ public class RandomUniversalFillTrowelItem extends BaseTrowelItem {
         int maxY = Math.max(pos1.getY(), pos2.getY());
         int maxZ = Math.max(pos1.getZ(), pos2.getZ());
 
-        int volume = (maxX - minX + 1) * (maxY - minY + 1) * (maxZ - minZ + 1);
+        long volume = (long) (maxX - minX + 1) * (maxY - minY + 1) * (maxZ - minZ + 1);
         if (volume > MAX_VOLUME) {
             player.displayClientMessage(
                     Component.literal("Selection too large! (" + volume + " blocks, max is " + MAX_VOLUME + ")"),
@@ -153,54 +156,39 @@ public class RandomUniversalFillTrowelItem extends BaseTrowelItem {
         // Get list of possible variants for the base block
         List<BlockState> variants = VariantConfig.getVariantStates(baseState.getBlock());
 
+        List<BlockChange> changes = new ArrayList<>();
+
         for (int x = minX; x <= maxX; x++) {
             for (int y = minY; y <= maxY; y++) {
                 for (int z = minZ; z <= maxZ; z++) {
+                    BlockPos pos = new BlockPos(x, y, z);
+                    BlockState oldState = level.getBlockState(pos);
+
                     BlockState stateToPlace;
-                    if (!variants.isEmpty() && RANDOM.nextDouble() < 0.2) { // or your own chance
+                    if (!variants.isEmpty() && RANDOM.nextDouble() < 0.2) { // 20% chance for a variant
                         stateToPlace = variants.get(RANDOM.nextInt(variants.size()));
                     } else {
                         stateToPlace = baseState;
                     }
-                    level.setBlock(new BlockPos(x, y, z), stateToPlace, 3);
+
+                    // Only record the change if the block is actually different
+                    if (!oldState.equals(stateToPlace)) {
+                        changes.add(new BlockChange(pos, oldState));
+                        level.setBlock(pos, stateToPlace, 3);
+                    }
                 }
             }
         }
 
+        // Record the action so Undo Trowel can reverse it
+        if (!changes.isEmpty() && level.getServer() != null) {
+            HistoryManager.getInstance(level.getServer())
+                    .recordAction("random_fill", changes);   // or "fill" if you prefer the same name
+        }
+
         player.displayClientMessage(
-                Component.literal("Filled " + volume + " blocks (with random variants)!"),
+                Component.literal("Filled " + changes.size() + " blocks (with variants)."),
                 true
         );
     }
 }
-    // --- Helper: define related blocks for each "family" ---
-    /*private List<BlockState> getVariantsFor(Block block) {
-        // Hardcoded mapping – extend as needed.
-        // Alternatively, use tags (e.g., #stone_bricks) to dynamically fetch variants.
-        if (block == Blocks.STONE_BRICKS) {
-            return List.of(
-                    Blocks.STONE_BRICKS.defaultBlockState(),
-                    Blocks.CRACKED_STONE_BRICKS.defaultBlockState(),
-                    Blocks.MOSSY_STONE_BRICKS.defaultBlockState(),
-                    Blocks.CHISELED_STONE_BRICKS.defaultBlockState(),
-                    Blocks.STONE.defaultBlockState()   // occasional plain stone
-            );
-        }
-        if (block == Blocks.BRICKS) {
-            return List.of(
-                    Blocks.BRICKS.defaultBlockState(),
-                    Blocks.CRACKED_STONE_BRICKS.defaultBlockState(), // placeholder
-                    Blocks.MOSSY_STONE_BRICKS.defaultBlockState()
-            );
-        }
-        if (block == Blocks.OAK_PLANKS) {
-            return List.of(
-                    Blocks.OAK_PLANKS.defaultBlockState(),
-                    Blocks.SPRUCE_PLANKS.defaultBlockState(),
-                    Blocks.BIRCH_PLANKS.defaultBlockState()
-            );
-        }
-        // Add more families as desired…
-        return List.of(); // no variants
-    }
-}*/

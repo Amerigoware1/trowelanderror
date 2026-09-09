@@ -22,9 +22,12 @@
 
 package com.trowelanderror.item;
 
+import com.trowelanderror.history.BlockChange;
+import com.trowelanderror.history.HistoryManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
@@ -32,9 +35,12 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
-import net.minecraft.server.level.ServerPlayer;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class AirTrowelItem extends BaseTrowelItem {
 
@@ -84,8 +90,7 @@ public class AirTrowelItem extends BaseTrowelItem {
 
                 ((ServerPlayer) player).sendSystemMessage(
                         Component.literal(
-                                "§eCleared " + clearedCount
-                                        + " blocks!"
+                                "§eCleared " + clearedCount + " blocks!"
                         )
                 );
 
@@ -103,32 +108,39 @@ public class AirTrowelItem extends BaseTrowelItem {
     private int clearRegion(Level level, BlockPos posA, BlockPos posB) {
         int minX = Math.min(posA.getX(), posB.getX());
         int maxX = Math.max(posA.getX(), posB.getX());
-
         int minY = Math.min(posA.getY(), posB.getY());
         int maxY = Math.max(posA.getY(), posB.getY());
-
         int minZ = Math.min(posA.getZ(), posB.getZ());
         int maxZ = Math.max(posA.getZ(), posB.getZ());
 
+        List<BlockChange> changes = new ArrayList<>();
         int count = 0;
 
         for (int x = minX; x <= maxX; x++) {
             for (int y = minY; y <= maxY; y++) {
                 for (int z = minZ; z <= maxZ; z++) {
-
                     BlockPos target = new BlockPos(x, y, z);
+                    BlockState oldState = level.getBlockState(target);
 
-                    if (!level.isEmptyBlock(target)) {
+                    if (!oldState.isAir()) {
+                        // Record the block before we turn it into air
+                        changes.add(new BlockChange(target, oldState));
+
                         level.setBlock(
                                 target,
                                 Blocks.AIR.defaultBlockState(),
                                 Block.UPDATE_ALL
                         );
-
                         count++;
                     }
                 }
             }
+        }
+
+        // Save history for the Undo Trowel
+        if (!changes.isEmpty() && level.getServer() != null) {
+            HistoryManager.getInstance(level.getServer())
+                    .recordAction("air", changes);
         }
 
         return count;

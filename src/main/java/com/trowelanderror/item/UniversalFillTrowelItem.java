@@ -22,6 +22,7 @@
 
 package com.trowelanderror.item;
 
+import com.trowelanderror.history.BlockChange;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponents;
@@ -40,7 +41,11 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState; // fixed
 import net.minecraft.world.level.block.Blocks;
 import java.util.Optional;
+import java.util.ArrayList;
+import java.util.List;
 
+import com.trowelanderror.history.BlockChange;
+import com.trowelanderror.history.HistoryManager;
 public class UniversalFillTrowelItem extends BaseTrowelItem {
 
     private static final int MAX_VOLUME = 32768; // Safety limit (32x32x32)
@@ -159,34 +164,42 @@ public class UniversalFillTrowelItem extends BaseTrowelItem {
     // The fill logic (unchanged)
     private void fillBox(Level level, BlockPos pos1, BlockPos pos2, BlockState state, Player player) {
         int minX = Math.min(pos1.getX(), pos2.getX());
-        int minY = Math.min(pos1.getY(), pos2.getY());
-        int minZ = Math.min(pos1.getZ(), pos2.getZ());
-
         int maxX = Math.max(pos1.getX(), pos2.getX());
+        int minY = Math.min(pos1.getY(), pos2.getY());
         int maxY = Math.max(pos1.getY(), pos2.getY());
+        int minZ = Math.min(pos1.getZ(), pos2.getZ());
         int maxZ = Math.max(pos1.getZ(), pos2.getZ());
 
-        int volume = (maxX - minX + 1) * (maxY - minY + 1) * (maxZ - minZ + 1);
-
-        if (volume > MAX_VOLUME) {
-            player.displayClientMessage(
-                    Component.literal("Selection too large! (" + volume + " blocks, max is " + MAX_VOLUME + ")"),
-                    true
-            );
+        // Optional volume safety check
+        long volume = (long) (maxX - minX + 1) * (maxY - minY + 1) * (maxZ - minZ + 1);
+        if (volume > MAX_VOLUME) {          // make sure MAX_VOLUME is accessible
+            player.displayClientMessage(Component.literal("Area too large!"), true);
             return;
         }
+
+        List<BlockChange> changes = new ArrayList<>();
 
         for (int x = minX; x <= maxX; x++) {
             for (int y = minY; y <= maxY; y++) {
                 for (int z = minZ; z <= maxZ; z++) {
-                    level.setBlock(new BlockPos(x, y, z), state, 3);
+                    BlockPos pos = new BlockPos(x, y, z);
+                    BlockState old = level.getBlockState(pos);
+
+                    // Only record if the block is actually going to change
+                    if (!old.equals(state)) {
+                        changes.add(new BlockChange(pos, old));
+                        level.setBlock(pos, state, 3);
+                    }
                 }
             }
         }
 
+        if (!changes.isEmpty() && level.getServer() != null) {
+            HistoryManager.getInstance(level.getServer()).recordAction("fill", changes);
+        }
+
+        // feedback message if you want
         player.displayClientMessage(
-                Component.literal("Filled " + volume + " blocks!"),
-                true
-        );
+                Component.literal("Filled " + changes.size() + " blocks."), true);
     }
 }

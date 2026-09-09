@@ -20,6 +20,8 @@
 
 package com.trowelanderror.item;
 
+import com.trowelanderror.history.BlockChange;
+import com.trowelanderror.history.HistoryManager;
 import com.trowelanderror.util.VariantConfig;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -97,21 +99,40 @@ public class RandomFillDownTrowelItem extends Item {
 
     private int fillDownStrip(Level level, BlockPos[] starts, BlockState baseState, List<BlockState> variants) {
         int placed = 0;
+        List<BlockChange> changes = new ArrayList<>();
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
 
         for (BlockPos startPos : starts) {
             for (int y = startPos.getY(); y >= level.getMinY() && placed < MAX_FILL_DEPTH; y--) {
                 cursor.set(startPos.getX(), y, startPos.getZ());
-                if (!isReplaceable(level, cursor)) break;
 
+                if (!isReplaceable(level, cursor)) {
+                    break; // stop this column when we hit a solid block
+                }
+
+                BlockState oldState = level.getBlockState(cursor);
+
+                // Decide what to place
                 BlockState stateToPlace = baseState;
                 if (!variants.isEmpty() && RANDOM.nextDouble() < VARIANT_CHANCE) {
                     stateToPlace = variants.get(RANDOM.nextInt(variants.size()));
                 }
-                level.setBlockAndUpdate(cursor, stateToPlace);
-                placed++;
+
+                // Record change + place the block
+                if (!oldState.equals(stateToPlace)) {
+                    changes.add(new BlockChange(cursor.immutable(), oldState));
+                    level.setBlockAndUpdate(cursor, stateToPlace);
+                    placed++;
+                }
             }
         }
+
+        // Record the whole operation for the Undo Trowel
+        if (!changes.isEmpty() && level.getServer() != null) {
+            HistoryManager.getInstance(level.getServer())
+                    .recordAction("random_fill_down", changes);
+        }
+
         return placed;
     }
 

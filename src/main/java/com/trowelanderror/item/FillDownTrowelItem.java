@@ -22,6 +22,8 @@
 
 package com.trowelanderror.item;
 
+import com.trowelanderror.history.BlockChange;
+import com.trowelanderror.history.HistoryManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.sounds.SoundSource;
@@ -61,19 +63,17 @@ public class FillDownTrowelItem extends Item {
         int placed = 0;
 
         if (face == Direction.UP && player != null) {
-            // Top face: forward strip (3 wide) + side columns (left/right of clicked)
+            // Top face: forward strip (3 wide) + side columns
             Direction facing = player.getDirection();
             BlockPos forwardCenter = clickedPos.relative(facing);
             Direction left = facing.getCounterClockWise();
             Direction right = facing.getClockWise();
 
             List<BlockPos> starts = new ArrayList<>();
-            // Forward strip
             starts.add(forwardCenter);
             starts.add(forwardCenter.relative(left));
             starts.add(forwardCenter.relative(right));
 
-            // Side columns – include if replaceable (air, water, lava)
             BlockPos sideLeft = clickedPos.relative(left);
             BlockPos sideRight = clickedPos.relative(right);
             if (isReplaceable(level, sideLeft)) starts.add(sideLeft);
@@ -97,17 +97,34 @@ public class FillDownTrowelItem extends Item {
 
     private int fillDownStrip(Level level, BlockPos[] starts, BlockState fillState) {
         int placed = 0;
+        List<BlockChange> changes = new ArrayList<>();
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
 
         for (BlockPos startPos : starts) {
             for (int y = startPos.getY(); y >= level.getMinY() && placed < MAX_FILL_DEPTH; y--) {
                 cursor.set(startPos.getX(), y, startPos.getZ());
-                // Stop if we hit a solid block (not replaceable)
-                if (!isReplaceable(level, cursor)) break;
-                level.setBlockAndUpdate(cursor, fillState);
-                placed++;
+
+                if (!isReplaceable(level, cursor)) {
+                    break; // stop this column
+                }
+
+                BlockState oldState = level.getBlockState(cursor);
+
+                // Only record + place if the block is actually different
+                if (!oldState.equals(fillState)) {
+                    changes.add(new BlockChange(cursor.immutable(), oldState));
+                    level.setBlockAndUpdate(cursor, fillState);
+                    placed++;
+                }
             }
         }
+
+        // Record history for the Undo Trowel
+        if (!changes.isEmpty() && level.getServer() != null) {
+            HistoryManager.getInstance(level.getServer())
+                    .recordAction("fill_down", changes);
+        }
+
         return placed;
     }
 

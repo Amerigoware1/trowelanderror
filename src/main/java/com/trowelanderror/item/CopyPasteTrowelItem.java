@@ -22,7 +22,10 @@
 
 package com.trowelanderror.item;
 
+import com.trowelanderror.history.BlockChange;
+import com.trowelanderror.history.HistoryManager;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.HolderGetter;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.Registries;
@@ -42,9 +45,11 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.core.Direction;
-import java.lang.reflect.Method;
+
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
 
 public class CopyPasteTrowelItem extends BaseTrowelItem {
 
@@ -87,7 +92,6 @@ public class CopyPasteTrowelItem extends BaseTrowelItem {
 
     // ------------------------------- use ----------------------------------
 
-    // Right-click AIR: sneak = clear, otherwise show status
     @Override
     public InteractionResult use(Level level, Player player, InteractionHand hand) {
         if (level.isClientSide()) return InteractionResult.SUCCESS;
@@ -112,7 +116,6 @@ public class CopyPasteTrowelItem extends BaseTrowelItem {
         return InteractionResult.PASS;
     }
 
-    // Right-click BLOCK
     @Override
     public InteractionResult useOn(UseOnContext context) {
         Level level = context.getLevel();
@@ -217,7 +220,9 @@ public class CopyPasteTrowelItem extends BaseTrowelItem {
         BlockPos origin = context.getClickedPos().relative(context.getClickedFace());
         HolderGetter<Block> lookup = level.registryAccess().lookup(Registries.BLOCK).orElseThrow();
 
+        List<BlockChange> changes = new ArrayList<>();
         int placed = 0;
+
         for (Tag t : blocks) {
             CompoundTag e = (CompoundTag) t;
             int dx = e.getInt("x").orElse(0);
@@ -227,19 +232,33 @@ public class CopyPasteTrowelItem extends BaseTrowelItem {
             int[] off = rotateOffset(dx, dz, rot);
             BlockPos target = origin.offset(off[0], dy, off[1]);
 
+            BlockState oldState = level.getBlockState(target);
+
             BlockState state = NbtUtils.readBlockState(lookup, e.getCompound("state").orElseGet(CompoundTag::new))
                     .rotate(level, target, rot);
+
+            // Record the old state before overwriting
+            if (!oldState.equals(state)) {
+                changes.add(new BlockChange(target, oldState));
+            }
+
             level.setBlock(target, state, 3);
 
             CompoundTag beTag = e.getCompound("be").orElse(null);
             BlockEntity be = level.getBlockEntity(target);
-            if (be != null) {
+            if (be != null && beTag != null) {
                 if (!loadBlockEntityWithTag(be, beTag)) {
                     // fallback: skip BE data or log
                 }
             }
 
             placed++;
+        }
+
+        // Save history for the Undo Trowel
+        if (!changes.isEmpty() && level.getServer() != null) {
+            HistoryManager.getInstance(level.getServer())
+                    .recordAction("copy_paste", changes);
         }
 
         player.displayClientMessage(Component.literal(
@@ -253,13 +272,12 @@ public class CopyPasteTrowelItem extends BaseTrowelItem {
         });
     }
 
+    // ---------- reflection helpers (unchanged) ----------
 
     private static Object makeValueInputFromTag(CompoundTag tag) {
         try {
-            // Try common concrete adapter class first
             try {
                 Class<?> cls = Class.forName("net.minecraft.world.level.storage.ValueInputTag");
-                // try static factories
                 try {
                     Method m = cls.getMethod("of", CompoundTag.class);
                     return m.invoke(null, tag);
@@ -268,14 +286,12 @@ public class CopyPasteTrowelItem extends BaseTrowelItem {
                     Method m = cls.getMethod("create", CompoundTag.class);
                     return m.invoke(null, tag);
                 } catch (NoSuchMethodException ignored) {}
-                // try constructor
                 try {
                     Constructor<?> ctor = cls.getConstructor(CompoundTag.class);
                     return ctor.newInstance(tag);
                 } catch (NoSuchMethodException ignored) {}
             } catch (ClassNotFoundException ignored) {}
 
-            // Fallback: try ValueInput.of(tag)
             try {
                 Class<?> valueInputCls = Class.forName("net.minecraft.world.level.storage.ValueInput");
                 Method of = valueInputCls.getMethod("of", CompoundTag.class);
@@ -293,13 +309,10 @@ public class CopyPasteTrowelItem extends BaseTrowelItem {
             Object valueInput = makeValueInputFromTag(beTag);
             if (valueInput == null) return false;
 
-            // find the ValueInput class at runtime
             Class<?> valueInputCls = Class.forName("net.minecraft.world.level.storage.ValueInput");
-            // find loadWithComponents(ValueInput) on the block entity
             Method loadMethod = be.getClass().getMethod("loadWithComponents", valueInputCls);
             loadMethod.invoke(be, valueInput);
 
-            // call setChanged if present
             try {
                 Method setChanged = be.getClass().getMethod("setChanged");
                 setChanged.invoke(be);
@@ -311,5 +324,4 @@ public class CopyPasteTrowelItem extends BaseTrowelItem {
             return false;
         }
     }
-
 }

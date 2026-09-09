@@ -77,8 +77,14 @@ public class ModItems {
             () -> new RandomExchangeTrowelItem(new Item.Properties()
                     .setId(ITEMS.key("random_exchange_trowel"))
                     .stacksTo(1)));
+
     public static final RegistryObject<Item> FIRE_TROWEL = ITEMS.register("fire_trowel",
             () -> new FireTrowelItem(new Item.Properties()
                     .setId(ITEMS.key("fire_trowel"))
+                    .stacksTo(1)));
+
+    public static final RegistryObject<Item> UNDO_TROWEL = ITEMS.register("undo_trowel",
+            () -> new UndoTrowelItem(new Item.Properties()
+                    .setId(ITEMS.key("undo_trowel"))
                     .stacksTo(1)));
 }

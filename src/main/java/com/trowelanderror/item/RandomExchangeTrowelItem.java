@@ -20,6 +20,8 @@
 
 package com.trowelanderror.item;
 
+import com.trowelanderror.history.BlockChange;
+import com.trowelanderror.history.HistoryManager;
 import com.trowelanderror.util.VariantConfig;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
@@ -38,6 +40,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
@@ -172,22 +175,41 @@ public class RandomExchangeTrowelItem extends BaseTrowelItem {
         List<BlockState> variants = VariantConfig.getVariantStates(targetBlock);
         BlockState baseTarget = targetBlock.defaultBlockState();
 
-        int changed = 0;
+        List<BlockChange> changes = new ArrayList<>();
+
         for (int x = minX; x <= maxX; x++) {
             for (int y = minY; y <= maxY; y++) {
                 for (int z = minZ; z <= maxZ; z++) {
                     BlockPos pos = new BlockPos(x, y, z);
-                    if (level.getBlockState(pos).getBlock() == sourceBlock) {
-                        BlockState stateToPlace = baseTarget;
-                        if (!variants.isEmpty() && RANDOM.nextDouble() < 0.2) {
-                            stateToPlace = variants.get(RANDOM.nextInt(variants.size()));
-                        }
+                    BlockState old = level.getBlockState(pos);
+
+                    // Only exchange the source block
+                    if (old.getBlock() != sourceBlock) {
+                        continue;
+                    }
+
+                    // Decide what to place (base target or a random variant)
+                    BlockState stateToPlace = baseTarget;
+                    if (!variants.isEmpty() && RANDOM.nextDouble() < 0.2) {
+                        stateToPlace = variants.get(RANDOM.nextInt(variants.size()));
+                    }
+
+                    // Record the change and place the block
+                    if (!old.equals(stateToPlace)) {
+                        changes.add(new BlockChange(pos, old));
                         level.setBlock(pos, stateToPlace, 3);
-                        changed++;
                     }
                 }
             }
         }
-        player.displayClientMessage(Component.literal("Exchanged " + changed + " blocks (with random variants)."), true);
+
+        // Save history for the Undo Trowel
+        if (!changes.isEmpty() && level.getServer() != null) {
+            HistoryManager.getInstance(level.getServer())
+                    .recordAction("random_exchange", changes);
+        }
+
+        player.displayClientMessage(
+                Component.literal("Exchanged " + changes.size() + " blocks (with random variants)."), true);
     }
 }

@@ -48,12 +48,12 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 
-public class RandomUniversalFillTrowelItem extends BaseTrowelItem {
+public class RandomGapFillTrowelItem extends BaseTrowelItem {
 
     private static final int MAX_VOLUME = 32768;
     private static final Random RANDOM = new Random();
 
-    public RandomUniversalFillTrowelItem(Properties properties) {
+    public RandomGapFillTrowelItem(Properties properties) {
         super(properties);
     }
 

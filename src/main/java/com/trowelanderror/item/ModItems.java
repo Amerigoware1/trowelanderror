@@ -22,7 +22,6 @@
 
 package com.trowelanderror.item;
 
-import com.azure.json.implementation.jackson.core.TreeNode;
 import com.trowelanderror.TrowelAndError;
 import net.minecraft.world.item.Item;
 import net.minecraftforge.registries.DeferredRegister;
@@ -38,9 +37,9 @@ public class ModItems {
                     .setId(ITEMS.key("air_trowel"))
                     .stacksTo(1)));
 
-    public static final RegistryObject<Item> UNIVERSAL_FILL_TROWEL = ITEMS.register("universal_fill_trowel",
-            () -> new UniversalFillTrowelItem(new Item.Properties()
-                    .setId(ITEMS.key("universal_fill_trowel"))
+    public static final RegistryObject<Item> GAP_FILL_TROWEL = ITEMS.register("universal_fill_trowel",
+            () -> new GapFillTrowelItem(new Item.Properties()
+                    .setId(ITEMS.key("gap_fill_trowel"))
                     .stacksTo(1)));
 
     public static final RegistryObject<Item> EXCHANGE_TROWEL = ITEMS.register("exchange_trowel",
@@ -63,9 +62,9 @@ public class ModItems {
                     .setId(ITEMS.key("digger_trowel"))
                     .stacksTo(1)));
 
-    public static final RegistryObject<Item> RANDOM_UNIVERSAL_FILL_TROWEL = ITEMS.register("ranom_universal_fill_trowel",
-            () -> new RandomUniversalFillTrowelItem(new Item.Properties()
-                    .setId(ITEMS.key("random_universal_fill_trowel"))
+    public static final RegistryObject<Item> RANDOM_GAP_FILL_TROWEL = ITEMS.register("ranom_universal_fill_trowel",
+            () -> new RandomGapFillTrowelItem(new Item.Properties()
+                    .setId(ITEMS.key("random_gap_fill_trowel"))
                     .stacksTo(1)));
 
     public static final RegistryObject<Item> RANDOM_FILL_DOWN_TROWEL = ITEMS.register("random_fill_down_trowel",

@@ -44,13 +44,12 @@ import java.util.Optional;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.trowelanderror.history.BlockChange;
 import com.trowelanderror.history.HistoryManager;
-public class UniversalFillTrowelItem extends BaseTrowelItem {
+public class GapFillTrowelItem extends BaseTrowelItem {
 
     private static final int MAX_VOLUME = 32768; // Safety limit (32x32x32)
 
-    public UniversalFillTrowelItem(Properties properties) {
+    public GapFillTrowelItem(Properties properties) {
         super(properties);
     }
 

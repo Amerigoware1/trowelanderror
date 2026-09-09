@@ -60,12 +60,12 @@ public final class TrowelAndError {
                     .icon(() -> new ItemStack(ModItems.AIR_TROWEL.get()))
                     .displayItems((parameters, output) -> {
                         output.accept(ModItems.AIR_TROWEL.get());
-                        output.accept(ModItems.UNIVERSAL_FILL_TROWEL.get());
+                        output.accept(ModItems.GAP_FILL_TROWEL.get());
                         output.accept(ModItems.EXCHANGE_TROWEL.get());
                         output.accept(ModItems.COPY_PASTE_TROWEL.get());
                         output.accept(ModItems.FILL_DOWN_TROWEL.get());
                         output.accept(ModItems.DIGGER_TROWEL.get());
-                        output.accept(ModItems.RANDOM_UNIVERSAL_FILL_TROWEL.get());
+                        output.accept(ModItems.RANDOM_GAP_FILL_TROWEL.get());
                         output.accept(ModItems.RANDOM_EXCHANGE_TROWEL.get());
                         output.accept(ModItems.RANDOM_FILL_DOWN_TROWEL.get());
                         output.accept(ModItems.FIRE_TROWEL.get());

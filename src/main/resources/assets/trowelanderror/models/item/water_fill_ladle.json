@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "trowelanderror:item/gap_fill_trowel"
+    "layer0": "trowelanderror:item/water_fill_ladle"
   }
 }

@@ -61,15 +61,19 @@ public final class TrowelAndError {
                     .displayItems((parameters, output) -> {
                         output.accept(ModItems.AIR_TROWEL.get());
                         output.accept(ModItems.GAP_FILL_TROWEL.get());
+                        output.accept(ModItems.RANDOM_GAP_FILL_TROWEL.get());
                         output.accept(ModItems.EXCHANGE_TROWEL.get());
+                        output.accept(ModItems.RANDOM_EXCHANGE_TROWEL.get());
                         output.accept(ModItems.COPY_PASTE_TROWEL.get());
                         output.accept(ModItems.FILL_DOWN_TROWEL.get());
-                        output.accept(ModItems.DIGGER_TROWEL.get());
-                        output.accept(ModItems.RANDOM_GAP_FILL_TROWEL.get());
-                        output.accept(ModItems.RANDOM_EXCHANGE_TROWEL.get());
                         output.accept(ModItems.RANDOM_FILL_DOWN_TROWEL.get());
+                        output.accept(ModItems.DIGGER_TROWEL.get());
                         output.accept(ModItems.FIRE_TROWEL.get());
                         output.accept(ModItems.UNDO_TROWEL.get());
+                        output.accept(ModItems.WATER_FILL_LADLE.get());
+                        output.accept(ModItems.LAVA_FILL_LADLE.get());
+                        output.accept(ModItems.DRAIN_LADLE.get());
+                        output.accept(ModItems.SPONGE_MOP.get());
                     })
                     .build());
 

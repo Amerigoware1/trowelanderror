@@ -1,6 +1,6 @@
 {
   "model": {
     "type": "minecraft:model",
-    "model": "trowelanderror:item/gap_fill_trowel"
+    "model": "trowelanderror:item/drain_ladle"
   }
 }

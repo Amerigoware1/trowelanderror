@@ -10,5 +10,9 @@
   "item.trowelanderror.random_exchange_trowel": "Random Exchange Trowel",
   "item.trowelanderror.fire_trowel": "Fire Trowel",
   "item.trowelanderror.undo_trowel": "Undo Trowel",
+  "item.trowelanderror.water_fill_ladle": "Water Fill Ladle",
+  "item.trowelanderror.lava_fill_ladle": "Lava Fill Ladle",
+  "item.trowelanderror.drain_ladle": "Drain Ladle",
+  "item.trowelanderror.sponge_mop": "Sponge Mop",
   "key.cubedigger.hud": "Toggle Digger HUD"
 }

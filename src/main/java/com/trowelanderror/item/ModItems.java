@@ -37,9 +37,14 @@ public class ModItems {
                     .setId(ITEMS.key("air_trowel"))
                     .stacksTo(1)));
 
-    public static final RegistryObject<Item> GAP_FILL_TROWEL = ITEMS.register("universal_fill_trowel",
+    public static final RegistryObject<Item> GAP_FILL_TROWEL = ITEMS.register("gap_fill_trowel",
             () -> new GapFillTrowelItem(new Item.Properties()
                     .setId(ITEMS.key("gap_fill_trowel"))
+                    .stacksTo(1)));
+
+    public static final RegistryObject<Item> RANDOM_GAP_FILL_TROWEL = ITEMS.register("random_gap_fill_trowel",
+            () -> new RandomGapFillTrowelItem(new Item.Properties()
+                    .setId(ITEMS.key("random_gap_fill_trowel"))
                     .stacksTo(1)));
 
     public static final RegistryObject<Item> EXCHANGE_TROWEL = ITEMS.register("exchange_trowel",
@@ -47,24 +52,15 @@ public class ModItems {
                     .setId(ITEMS.key("exchange_trowel"))
                     .stacksTo(1)));
 
-    public static final RegistryObject<Item> COPY_PASTE_TROWEL = ITEMS.register("copy_paste_trowel",
-            () -> new CopyPasteTrowelItem(new Item.Properties()
-                    .setId(ITEMS.key("copy_paste_trowel"))
+    public static final RegistryObject<Item> RANDOM_EXCHANGE_TROWEL = ITEMS.register("random_exchange_trowel",
+            () -> new RandomExchangeTrowelItem(new Item.Properties()
+                    .setId(ITEMS.key("random_exchange_trowel"))
                     .stacksTo(1)));
+
 
     public static final RegistryObject<Item> FILL_DOWN_TROWEL = ITEMS.register("fill_down_trowel",
             () -> new FillDownTrowelItem(new Item.Properties()
                     .setId(ITEMS.key("fill_down_trowel"))
-                    .stacksTo(1)));
-
-    public static final RegistryObject<Item> DIGGER_TROWEL = ITEMS.register("digger_trowel",
-            () -> new DiggerTrowelItem(new Item.Properties()
-                    .setId(ITEMS.key("digger_trowel"))
-                    .stacksTo(1)));
-
-    public static final RegistryObject<Item> RANDOM_GAP_FILL_TROWEL = ITEMS.register("ranom_universal_fill_trowel",
-            () -> new RandomGapFillTrowelItem(new Item.Properties()
-                    .setId(ITEMS.key("random_gap_fill_trowel"))
                     .stacksTo(1)));
 
     public static final RegistryObject<Item> RANDOM_FILL_DOWN_TROWEL = ITEMS.register("random_fill_down_trowel",
@@ -72,9 +68,14 @@ public class ModItems {
                     .setId(ITEMS.key("random_fill_down_trowel"))
                     .stacksTo(1)));
 
-    public static final RegistryObject<Item> RANDOM_EXCHANGE_TROWEL = ITEMS.register("random_exchange_trowel",
-            () -> new RandomExchangeTrowelItem(new Item.Properties()
-                    .setId(ITEMS.key("random_exchange_trowel"))
+    public static final RegistryObject<Item> DIGGER_TROWEL = ITEMS.register("digger_trowel",
+            () -> new DiggerTrowelItem(new Item.Properties()
+                    .setId(ITEMS.key("digger_trowel"))
+                    .stacksTo(1)));
+
+    public static final RegistryObject<Item> COPY_PASTE_TROWEL = ITEMS.register("copy_paste_trowel",
+            () -> new CopyPasteTrowelItem(new Item.Properties()
+                    .setId(ITEMS.key("copy_paste_trowel"))
                     .stacksTo(1)));
 
     public static final RegistryObject<Item> FIRE_TROWEL = ITEMS.register("fire_trowel",
@@ -85,5 +86,25 @@ public class ModItems {
     public static final RegistryObject<Item> UNDO_TROWEL = ITEMS.register("undo_trowel",
             () -> new UndoTrowelItem(new Item.Properties()
                     .setId(ITEMS.key("undo_trowel"))
+                    .stacksTo(1)));
+
+    public static final RegistryObject<Item> WATER_FILL_LADLE = ITEMS.register("water_fill_ladle",
+            () -> new WaterFillLadleItem(new Item.Properties()
+                    .setId(ITEMS.key("water_fill_ladle"))
+                    .stacksTo(1)));
+
+    public static final RegistryObject<Item> LAVA_FILL_LADLE = ITEMS.register("lava_fill_ladle",
+            () -> new LavaFillLadleItem(new Item.Properties()
+                    .setId(ITEMS.key("lava_fill_ladle"))
+                    .stacksTo(1)));
+
+    public static final RegistryObject<Item> DRAIN_LADLE = ITEMS.register("drain_ladle",
+            () -> new DrainLadleItem(new Item.Properties()
+                    .setId(ITEMS.key("drain_ladle"))
+                    .stacksTo(1)));
+
+    public static final RegistryObject<Item> SPONGE_MOP = ITEMS.register("sponge_mop",
+            () -> new SpongeMopItem(new Item.Properties()
+                    .setId(ITEMS.key("sponge_mop"))
                     .stacksTo(1)));
 }

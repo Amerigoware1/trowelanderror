@@ -22,9 +22,11 @@
 
 package com.trowelanderror.client;
 
+import com.trowelanderror.TrowelAndError;
 import com.trowelanderror.data.DiggerSettings;
 import com.trowelanderror.data.DiggerSettings.Shape;
 import com.trowelanderror.item.DiggerTrowelItem;
+import com.trowelanderror.network.SetDiggerSettingsPacket;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -32,6 +34,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraftforge.network.PacketDistributor;
 
 public class CubeDiggerScreen extends Screen {
 
@@ -109,10 +112,21 @@ public class CubeDiggerScreen extends Screen {
     private void save(Shape newShape) {
         Player player = Minecraft.getInstance().player;
         if (player == null) return;
+
         ItemStack held = player.getMainHandItem();
         if (!(held.getItem() instanceof DiggerTrowelItem)) return;
+
         Shape shape = newShape != null ? newShape : DiggerTrowelItem.getSettings(held).shape();
-        DiggerTrowelItem.setSettings(held, new DiggerSettings(shape, diameterFor(shape), depth, spareOres));
+        DiggerSettings newSettings = new DiggerSettings(shape, diameterFor(shape), depth, spareOres);
+
+        // Update client immediately so HUD feels responsive
+        DiggerTrowelItem.setSettings(held, newSettings);
+
+        // Send to server
+        TrowelAndError.CHANNEL.send(
+                new SetDiggerSettingsPacket(newSettings),
+                PacketDistributor.SERVER.noArg()
+        );
     }
 
     private static int diameterFor(Shape shape) {

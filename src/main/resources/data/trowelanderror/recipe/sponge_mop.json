@@ -1,0 +1,9 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [" W ", " S ", " S "],
+  "key": {
+    "W": "minecraft:sponge",
+    "S": "minecraft:stick"
+  },
+  "result": { "id": "trowelanderror:sponge_mop" }
+}

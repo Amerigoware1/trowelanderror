@@ -1,0 +1,13 @@
+{
+  "parent": "trowelanderror:recipes/root",
+  "criteria": {
+    "has_lava_bucket": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": { "items": [{ "items": "minecraft:lava_bucket" }] }
+    }
+  },
+  "requirements": [["has_lava_bucket"]],
+  "rewards": {
+    "recipes": ["trowelanderror:lava_fill_ladle"]
+  }
+}

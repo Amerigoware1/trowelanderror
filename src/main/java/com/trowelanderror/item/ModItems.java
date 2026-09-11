@@ -107,4 +107,14 @@ public class ModItems {
             () -> new SpongeMopItem(new Item.Properties()
                     .setId(ITEMS.key("sponge_mop"))
                     .stacksTo(1)));
+
+    public static final RegistryObject<Item> WATER_HOSE = ITEMS.register("water_hose",
+            () -> new WaterHoseItem(new Item.Properties()
+                    .setId(ITEMS.key("water_hose"))
+                    .stacksTo(1)));
+
+    public static final RegistryObject<Item> LAVA_HOSE = ITEMS.register("lava_hose",
+            () -> new LavaHoseItem(new Item.Properties()
+                    .setId(ITEMS.key("lava_hose"))
+                    .stacksTo(1)));
 }

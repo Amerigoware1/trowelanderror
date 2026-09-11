@@ -1,0 +1,17 @@
+{
+  "parent": "trowelanderror:recipes/root",
+  "criteria": {
+    "has_redstone": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          { "items": "minecraft:redstone" }
+        ]
+      }
+    }
+  },
+  "requirements": [["has_redstone"]],
+  "rewards": {
+    "recipes": ["trowelanderror:undo_trowel"]
+  }
+}

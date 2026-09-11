@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " B ",
+    " S ",
+    " S "
+  ],
+  "key": {
+    "B": "minecraft:lava_bucket",
+    "S": "minecraft:stick"
+  },
+  "result": {
+    "id": "trowelanderror:lava_hose"
+  }
+}

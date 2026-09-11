@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    "trowelanderror:exchange_trowel",
+    "minecraft:amethyst_shard"
+  ],
+  "result": { "id": "trowelanderror:random_exchange_trowel" }
+}

@@ -14,5 +14,7 @@
   "item.trowelanderror.lava_fill_ladle": "Lava Fill Ladle",
   "item.trowelanderror.drain_ladle": "Drain Ladle",
   "item.trowelanderror.sponge_mop": "Sponge Mop",
+  "item.trowelanderror.water_hose": "Water Hose",
+  "item.trowelanderror.lava_hose": "Lava Hose",
   "key.cubedigger.hud": "Toggle Digger HUD"
 }

@@ -1,0 +1,10 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [" I ", " B ", " S "],
+  "key": {
+    "I": "minecraft:iron_ingot",
+    "B": "minecraft:bucket",
+    "S": "minecraft:stick"
+  },
+  "result": { "id": "trowelanderror:water_fill_ladle" }
+}

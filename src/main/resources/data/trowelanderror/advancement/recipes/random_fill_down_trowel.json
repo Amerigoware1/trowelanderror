@@ -1,0 +1,13 @@
+{
+  "parent": "trowelanderror:recipes/root",
+  "criteria": {
+    "has_base": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": { "items": [{ "items": "trowelanderror:fill_down_trowel" }] }
+    }
+  },
+  "requirements": [["has_base"]],
+  "rewards": {
+    "recipes": ["trowelanderror:random_fill_down_trowel"]
+  }
+}

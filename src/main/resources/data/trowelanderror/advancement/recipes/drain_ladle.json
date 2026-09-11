@@ -1,0 +1,13 @@
+{
+  "parent": "trowelanderror:recipes/root",
+  "criteria": {
+    "has_hopper": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": { "items": [{ "items": "minecraft:hopper" }] }
+    }
+  },
+  "requirements": [["has_hopper"]],
+  "rewards": {
+    "recipes": ["trowelanderror:drain_ladle"]
+  }
+}

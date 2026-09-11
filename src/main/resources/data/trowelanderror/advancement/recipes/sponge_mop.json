@@ -1,0 +1,13 @@
+{
+  "parent": "trowelanderror:recipes/root",
+  "criteria": {
+    "has_sponge": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": { "items": [{ "items": "minecraft:sponge" }] }
+    }
+  },
+  "requirements": [["has_sponge"]],
+  "rewards": {
+    "recipes": ["trowelanderror:sponge_mop"]
+  }
+}

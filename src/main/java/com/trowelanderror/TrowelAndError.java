@@ -24,10 +24,12 @@ package com.trowelanderror;
 
 import com.mojang.logging.LogUtils;
 import com.trowelanderror.item.ModItems;
+import com.trowelanderror.network.SetDiggerSettingsPacket;
 import com.trowelanderror.setup.ModDataComponents;
 import com.trowelanderror.util.VariantConfig;   // <--- ADD THIS IMPORT
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
@@ -38,11 +40,12 @@ import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.minecraftforge.network.ChannelBuilder;
+import net.minecraftforge.network.SimpleChannel;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 import org.slf4j.Logger;
-
 import java.io.InputStream;
 
 @Mod(TrowelAndError.MODID)
@@ -74,6 +77,8 @@ public final class TrowelAndError {
                         output.accept(ModItems.LAVA_FILL_LADLE.get());
                         output.accept(ModItems.DRAIN_LADLE.get());
                         output.accept(ModItems.SPONGE_MOP.get());
+                        output.accept(ModItems.WATER_HOSE.get());
+                        output.accept(ModItems.LAVA_HOSE.get());
                     })
                     .build());
 
@@ -104,10 +109,17 @@ public final class TrowelAndError {
 
         // Forge config
         context.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
-    }   // <--- Constructor ends here
+    }
 
     private void commonSetup(final FMLCommonSetupEvent event) {
         LOGGER.info("Trowel & Error common setup complete.");
+
+        // Register network packets here
+        CHANNEL.messageBuilder(SetDiggerSettingsPacket.class)
+                .encoder((pkt, buf) -> SetDiggerSettingsPacket.STREAM_CODEC.encode(buf, pkt))
+                .decoder(buf -> SetDiggerSettingsPacket.STREAM_CODEC.decode(buf))
+                .consumerMainThread(SetDiggerSettingsPacket::handle)
+                .add();
     }
 
     @Mod.EventBusSubscriber(modid = MODID, value = Dist.CLIENT)
@@ -117,4 +129,11 @@ public final class TrowelAndError {
             LOGGER.info("Trowel & Error client setup complete.");
         }
     }
+
+    public static final SimpleChannel CHANNEL = ChannelBuilder
+            .named(Identifier.fromNamespaceAndPath("trowelanderror", "main"))
+            .networkProtocolVersion(1)
+            .clientAcceptedVersions((status, version) -> true)
+            .serverAcceptedVersions((status, version) -> true)
+            .simpleChannel();
 }

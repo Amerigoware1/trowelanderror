@@ -22,30 +22,19 @@
 
 package com.trowelanderror.item;
 
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.tags.EntityTypeTags;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.boss.enderdragon.EnderDragon;
-import net.minecraft.world.entity.boss.wither.WitherBoss;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.entity.projectile.ProjectileUtil;
+import net.minecraft.world.entity.projectile.hurtingprojectile.SmallFireball;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.phys.AABB;
-import net.minecraft.world.phys.BlockHitResult;
-import net.minecraft.world.phys.EntityHitResult;
-import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 
 public class FireTrowelItem extends BaseTrowelItem {
+
+    private static final double SPEED = 1.8D;
 
     public FireTrowelItem(Properties properties) {
         super(properties);
@@ -56,180 +45,24 @@ public class FireTrowelItem extends BaseTrowelItem {
         ItemStack stack = player.getItemInHand(hand);
 
         if (level.isClientSide()) {
-            return InteractionResult.PASS;
+            return InteractionResult.SUCCESS;
         }
 
-        Vec3 eyePos = player.getEyePosition();
-        Vec3 lookVec = player.getLookAngle();
-        double reach = 128.0D;
-        Vec3 reachEnd = eyePos.add(lookVec.scale(reach));
+        Vec3 look = player.getLookAngle();
+        Vec3 spawnPos = player.getEyePosition().add(look.scale(0.8D));
 
-        // Block ray trace
-        HitResult blockHit = level.clip(new ClipContext(
-                eyePos, reachEnd,
-                ClipContext.Block.COLLIDER,
-                ClipContext.Fluid.NONE,
-                player
-        ));
+        SmallFireball fireball = new SmallFireball(level, player, look.scale(0.1));
+        fireball.setPos(spawnPos);
+        fireball.setDeltaMovement(look.scale(SPEED));
 
-        // Entity ray trace
-        AABB searchBox = player.getBoundingBox()
-                .expandTowards(lookVec.scale(reach))
-                .inflate(1.0D);
+        level.addFreshEntity(fireball);
 
-        EntityHitResult entityHit = ProjectileUtil.getEntityHitResult(
-                level,
-                player,
-                eyePos,
-                reachEnd,
-                searchBox,
-                e -> !e.isSpectator() && e.isPickable() && e != player,
-                0.0F
-        );
-
-        // Pick the closer hit
-        HitResult finalHit = blockHit;
-        if (entityHit != null) {
-            double entityDistSq = eyePos.distanceToSqr(entityHit.getLocation());
-            double blockDistSq = blockHit.getType() == HitResult.Type.MISS
-                    ? Double.MAX_VALUE
-                    : eyePos.distanceToSqr(blockHit.getLocation());
-            if (entityDistSq < blockDistSq) {
-                finalHit = entityHit;
-            }
-        }
-
-        if (finalHit.getType() != HitResult.Type.MISS) {
-            Vec3 hitLoc = finalHit.getLocation();
-
-            // ServerLevel#sendParticles(T, double, double, double, int, double, double, double, double)
-            // — confirmed against ForgeJavaDocs-NG ServerLevel javadoc for 1.21.x.
-            if (level instanceof net.minecraft.server.level.ServerLevel serverLevel) {
-                serverLevel.sendParticles(ParticleTypes.FLAME,
-                        hitLoc.x, hitLoc.y, hitLoc.z, 1, 0.0, 0.1, 0.0, 0.0);
-                serverLevel.sendParticles(ParticleTypes.FLAME,
-                        hitLoc.x, hitLoc.y, hitLoc.z, 8,
-                        0.5, 0.5, 0.5, 0.05);
-            }
-
-            if (finalHit instanceof EntityHitResult ehr) {
-                Entity target = ehr.getEntity();
-                if (target instanceof LivingEntity living) {
-
-                    boolean isUndead = living.getType().is(EntityTypeTags.UNDEAD);
-                    boolean isBoss = living instanceof EnderDragon || living instanceof WitherBoss;
-                    boolean fireImmune = living.fireImmune();
-
-                    if (level instanceof net.minecraft.server.level.ServerLevel serverLevel) {
-                        if (fireImmune || isUndead || isBoss) {
-                            // Entity#hurtServer(ServerLevel, DamageSource, float) -> boolean
-                            // — standard since 1.20.5; unchanged in 1.21.x.
-                            living.hurtServer(serverLevel,
-                                    level.damageSources().indirectMagic(player, player), 1000.0F);
-                            living.invulnerableTime = 0;
-                            living.setDeltaMovement(0, 0.5, 0);
-                        } else {
-                            living.hurtServer(serverLevel,
-                                    level.damageSources().onFire(), 20.0F);
-                            // LivingEntity#igniteForSeconds(float) — confirmed in 1.21.x javadoc.
-                            living.igniteForSeconds(10.0F);
-                            living.setDeltaMovement(lookVec.scale(1.5));
-                        }
-                    }
-
-                    // Level#playSound(Player, double, double, double, SoundEvent, SoundSource, float, float)
-                    // — confirmed: no BlockPos overload exists in 1.21.x.
-                    // Pass null as the player so every nearby client hears it.
-                    level.playSound(null,
-                            player.getX(), player.getY(), player.getZ(),
-                            SoundEvents.GENERIC_EXPLODE, SoundSource.PLAYERS, 1.0F, 1.5F);
-                }
-            } else if (finalHit instanceof BlockHitResult bhr) {
-                BlockPos pos = bhr.getBlockPos().relative(bhr.getDirection());
-                if (level.getBlockState(pos).isAir()) {
-                    level.setBlockAndUpdate(pos, Blocks.FIRE.defaultBlockState());
-                }
-            }
-        }
+        // Only the sound, no muzzle particles
+        level.playSound(null,
+                player.getX(), player.getY(), player.getZ(),
+                SoundEvents.BLAZE_SHOOT, SoundSource.PLAYERS,
+                1.0F, 1.0F);
 
         return InteractionResult.SUCCESS;
     }
 }
-/*package com.trowelanderror.item;
-
-import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
-import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResult;
-import net.minecraft.world.entity.projectile.SmallFireball;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.phys.Vec3;
-
-public class FireTrowelItem extends BaseTrowelItem {
-
-    private static final double SPEED = 1.5D;
-
-    public FireTrowelItem(Properties properties) {
-        super(properties);
-    }
-
-    @Override
-    public InteractionResult use(Level level, Player player, InteractionHand hand) {
-        ItemStack stack = player.getItemInHand(hand);
-
-        if (level.isClientSide()) {
-            return InteractionResult.PASS;
-        }
-
-        Vec3 look = player.getLookAngle();
-
-        // Spawn slightly in front of the player's eyes
-        Vec3 spawnPos = player.getEyePosition().add(look.scale(0.5D));
-
-        // Forge 61 constructor:
-        // SmallFireball(Level, LivingEntity owner, double accelX, double accelY, double accelZ)
-        SmallFireball fireball = new SmallFireball(
-                level,
-                player,
-                look.x * 0.1,
-                look.y * 0.1,
-                look.z * 0.1
-        );
-
-        // Position the fireball at the spawn point
-        fireball.setPos(spawnPos.x, spawnPos.y, spawnPos.z);
-
-        // Forge does NOT have assignDirectionalMovement — use setDeltaMovement
-        fireball.setDeltaMovement(look.scale(SPEED));
-
-        // Add entity to world
-        level.addFreshEntity(fireball);
-
-        // Play blaze-shoot sound
-        level.playSound(
-                null,
-                player.getX(), player.getY(), player.getZ(),
-                SoundEvents.BLAZE_SHOOT,
-                SoundSource.PLAYERS,
-                1.0F,
-                1.0F
-        );
-
-        // Flame particles
-        if (level instanceof net.minecraft.server.level.ServerLevel serverLevel) {
-            serverLevel.sendParticles(
-                    ParticleTypes.FLAME,
-                    spawnPos.x, spawnPos.y, spawnPos.z,
-                    4,
-                    0.0, 0.0, 0.0,
-                    0.02
-            );
-        }
-
-        return InteractionResult.SUCCESS;
-    }
-}*/
-

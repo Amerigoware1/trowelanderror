@@ -6,7 +6,7 @@ license="GNU GENERAL PUBLIC LICENSE"
 
 [[mods]]
 modId="trowelanderror"
-version="1.4.0"
+version="1.4.1"
 displayName = "Trowel & Error"
 #updateJSONURL="https://example.com/updates.json" #optional
 #displayURL="https://example.com/" #optional

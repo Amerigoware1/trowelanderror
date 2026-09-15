@@ -20,45 +20,34 @@
  * copies or substantial portions of the Software.
  */
 
-package com.trowelanderror.client;
+/*package com.trowelanderror.client;
 
 import com.trowelanderror.data.DiggerSettings;
 import com.trowelanderror.item.DiggerTrowelItem;
-import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.AddGuiOverlayLayersEvent;
-import net.minecraftforge.client.event.InputEvent;
-import net.minecraftforge.client.gui.overlay.ForgeLayeredDraw;
-import net.minecraftforge.eventbus.api.listener.SubscribeEvent;
+import net.minecraftforge.client.event.RenderGuiEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
-import org.lwjgl.glfw.GLFW;
 
 @Mod.EventBusSubscriber(modid = "trowelanderror", value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class CubeDiggerHud {
 
-    private static final int X = 20, Y = 20;
-
-    // In 1.21.11 this event fires on the DEFAULT (Forge) bus group, NOT the mod bus!
     @SubscribeEvent
-    public static void onAddGuiLayers(AddGuiOverlayLayersEvent event) {
-        event.getLayeredDraw().add(
-                Identifier.fromNamespaceAndPath("trowelanderror", "cube_digger_hud"),
-                CubeDiggerHud::renderHud);
-    }
-
-    public static void renderHud(GuiGraphics gfx, DeltaTracker tracker) {
+    public static void onRenderGui(RenderGuiEvent.Post event) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.screen != null) return;
         ItemStack held = mc.player.getMainHandItem();
         if (!(held.getItem() instanceof DiggerTrowelItem)) return;
         DiggerSettings s = DiggerTrowelItem.getSettings(held);
-        gfx.drawString(mc.font, "Digger: " + s.shape() + " " + s.diameter() + "x" + s.diameter() + " d" + s.depth() + (s.spareOres() ? " [ores]" : ""), 4, 4, 0xFFFFFFFF);
-    }
+        String text = "Digger: " + s.shape() + " " + s.diameter() + "x" + s.diameter()
+                + " d" + s.depth() + (s.spareOres() ? " [ores]" : "");
 
-}
+        GuiGraphics gfx = event.getGuiGraphics();
+        gfx.drawString(mc.font, text, 4, 4, 0xFFFFFFFF, true);
+    }
+}*/
+
+

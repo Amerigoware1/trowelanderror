@@ -22,11 +22,13 @@
 
 package com.trowelanderror.client;
 
+import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.trowelanderror.item.CopyPasteTrowelItem;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.ShapeRenderer;
-import net.minecraft.client.renderer.rendertype.RenderTypes;
+import net.minecraft.client.renderer.LevelRenderer;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderGetter;
 import net.minecraft.core.registries.Registries;
@@ -46,7 +48,7 @@ import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RenderHighlightEvent;
-import net.minecraftforge.eventbus.api.listener.SubscribeEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
 @Mod.EventBusSubscriber(
@@ -74,55 +76,66 @@ public final class CopyPastePreviewRenderer {
         CompoundTag itemTag = CopyPasteTrowelItem.getCustomTag(stack);
         if (!itemTag.contains("blocks")) return;
 
-        ListTag blocks = itemTag.getList("blocks").orElseGet(ListTag::new);
+        ListTag blocks = itemTag.getList("blocks", Tag.TAG_COMPOUND);
         if (blocks.isEmpty()) return;
 
         BlockHitResult hit = event.getTarget();
         Rotation rotation = CopyPasteTrowelItem.rotationFor(
-                itemTag.getInt("copy_dir").orElse(0),
+                itemTag.getInt("copy_dir"),
                 CopyPasteTrowelItem.dirIndex(player.getDirection()));
         BlockPos origin = hit.getBlockPos().relative(hit.getDirection());
-        Vec3 cameraPos = event.getCamera().position(); // renamed in 1.21.11
+        Vec3 cameraPos = event.getCamera().getPosition();
 
         HolderGetter<Block> blockLookup = minecraft.level.registryAccess()
-                .lookup(Registries.BLOCK)
-                .orElseThrow();
+                .lookupOrThrow(Registries.BLOCK);
 
-        event.setCustomRenderer((bufferSource, poseStack, translucentPass, state) -> {
-            if (translucentPass) return; // runs once per pass; draw only once
+        // Cancel the normal highlight so we can draw our own
+        event.setCanceled(true);
 
-            VertexConsumer lineBuffer = bufferSource.getBuffer(RenderTypes.lines());
+        PoseStack poseStack = event.getPoseStack();
+        MultiBufferSource.BufferSource bufferSource = minecraft.renderBuffers().bufferSource();
+        VertexConsumer lineBuffer = bufferSource.getBuffer(RenderType.lines());
 
-            poseStack.pushPose();
-            poseStack.translate(-cameraPos.x, -cameraPos.y, -cameraPos.z);
+        poseStack.pushPose();
+        poseStack.translate(-cameraPos.x, -cameraPos.y, -cameraPos.z);
 
-            int drawn = 0;
-            for (Tag rawEntry : blocks) {
-                if (drawn >= MAX_PREVIEW_BOXES) break;
-                if (!(rawEntry instanceof CompoundTag entry)) continue;
+        int drawn = 0;
+        for (Tag rawEntry : blocks) {
+            if (drawn >= MAX_PREVIEW_BOXES) break;
+            if (!(rawEntry instanceof CompoundTag entry)) continue;
 
-                int dx = entry.getInt("x").orElse(0);
-                int dy = entry.getInt("y").orElse(0);
-                int dz = entry.getInt("z").orElse(0);
+            int dx = entry.getInt("x");
+            int dy = entry.getInt("y");
+            int dz = entry.getInt("z");
 
-                int[] rotatedOffset = CopyPasteTrowelItem.rotateOffset(dx, dz, rotation);
-                BlockPos previewPos = origin.offset(rotatedOffset[0], dy, rotatedOffset[1]);
+            int[] rotatedOffset = CopyPasteTrowelItem.rotateOffset(dx, dz, rotation);
+            BlockPos previewPos = origin.offset(rotatedOffset[0], dy, rotatedOffset[1]);
 
-                CompoundTag stateTag = entry.getCompound("state").orElse(null);
-                if (stateTag == null) continue;
+            CompoundTag stateTag = entry.getCompound("state");
+            if (stateTag.isEmpty()) continue;
 
-                BlockState copiedState = NbtUtils.readBlockState(blockLookup, stateTag);
-                int rgb = copiedState.getMapColor(minecraft.level, previewPos).col;
-                int argb = 0xBF000000 | (rgb & 0xFFFFFF); // ~75% alpha + map color
+            BlockState copiedState = NbtUtils.readBlockState(blockLookup, stateTag);
+            int rgb = copiedState.getMapColor(minecraft.level, previewPos).col;
 
-                ShapeRenderer.renderShape(poseStack, lineBuffer, UNIT_CUBE,
-                        previewPos.getX(), previewPos.getY(), previewPos.getZ(),
-                        argb, 2.0F);
-                drawn++;
-            }
+            float r = ((rgb >> 16) & 0xFF) / 255.0F;
+            float g = ((rgb >> 8) & 0xFF) / 255.0F;
+            float b = (rgb & 0xFF) / 255.0F;
+            float a = 0.75F;
 
-            poseStack.popPose();
-            bufferSource.endBatch(RenderTypes.lines());
-        });
+            LevelRenderer.renderVoxelShape(
+                    poseStack,
+                    lineBuffer,
+                    UNIT_CUBE,
+                    previewPos.getX(),
+                    previewPos.getY(),
+                    previewPos.getZ(),
+                    r, g, b, a,
+                    true
+            );
+            drawn++;
+        }
+
+        poseStack.popPose();
+        bufferSource.endBatch(RenderType.lines());
     }
 }

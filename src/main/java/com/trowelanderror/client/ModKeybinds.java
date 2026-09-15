@@ -27,7 +27,7 @@ import net.minecraft.client.KeyMapping;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
 import net.minecraftforge.event.TickEvent.ClientTickEvent;
-import net.minecraftforge.eventbus.api.listener.SubscribeEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import org.lwjgl.glfw.GLFW;
 import net.minecraft.network.chat.Component;
@@ -39,7 +39,7 @@ public class ModKeybinds {
             "key.cubedigger.hud",
             InputConstants.Type.KEYSYM,
             GLFW.GLFW_KEY_G,
-            KeyMapping.Category.MISC
+            "key.categories.misc"          // ← plain string
     );
 
     // In Forge 61, RegisterKeyMappingsEvent fires on the DEFAULT (Forge) BusGroup,

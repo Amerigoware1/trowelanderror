@@ -27,7 +27,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 
@@ -63,12 +63,10 @@ public class VariantConfig {
         List<String> variantIds = variantMap.getOrDefault(baseId, Collections.singletonList(baseId));
 
         return variantIds.stream()
-                .map(id -> BuiltInRegistries.BLOCK.get(Identifier.parse(id)))
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .map(Holder.Reference::value)
+                .map(ResourceLocation::parse)
+                .map(BuiltInRegistries.BLOCK::get) // Returns Block directly in 1.21.1
                 .map(Block::defaultBlockState)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public static List<Block> getVariantBlocks(Block base) {
@@ -76,11 +74,9 @@ public class VariantConfig {
         List<String> variantIds = variantMap.getOrDefault(baseId, Collections.singletonList(baseId));
 
         return variantIds.stream()
-                .map(id -> BuiltInRegistries.BLOCK.get(Identifier.parse(id)))
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .map(Holder.Reference::value)
-                .collect(Collectors.toList());
+                .map(ResourceLocation::parse)
+                .map(BuiltInRegistries.BLOCK::get) // Returns Block directly in 1.21.1
+                .toList();
     }
 }
 

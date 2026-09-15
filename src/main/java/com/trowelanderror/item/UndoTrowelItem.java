@@ -29,6 +29,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -41,15 +42,23 @@ public class UndoTrowelItem extends Item {
     }
 
     @Override
-    public InteractionResult use(Level level, Player player, InteractionHand hand) {
-        if (level.isClientSide()) return InteractionResult.SUCCESS;
-        return performUndo(level, player);
+    public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
+        ItemStack stack = player.getItemInHand(hand);
+        if (level.isClientSide()) return InteractionResultHolder.success(stack);
+
+        InteractionResult result = performUndo(level, player);
+        return result == InteractionResult.SUCCESS
+                ? InteractionResultHolder.success(stack)
+                : InteractionResultHolder.fail(stack);
     }
 
     @Override
     public InteractionResult useOn(UseOnContext context) {
         if (context.getLevel().isClientSide()) return InteractionResult.SUCCESS;
-        return performUndo(context.getLevel(), context.getPlayer());
+        Player player = context.getPlayer();
+        if (player == null) return InteractionResult.PASS;
+
+        return performUndo(context.getLevel(), player);
     }
 
     private InteractionResult performUndo(Level level, Player player) {
@@ -65,8 +74,6 @@ public class UndoTrowelItem extends Item {
         int reverted = 0;
         for (BlockChange change : entry.getChanges()) {
             BlockPos pos = change.getPos();
-            // Only undo if the block is still the same as when we recorded? Actually, we just set it back.
-            // Optionally check if the current block matches the new state? We can skip check for simplicity.
             level.setBlock(pos, change.getOldState(), 3);
             reverted++;
         }

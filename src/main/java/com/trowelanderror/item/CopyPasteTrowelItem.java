@@ -36,6 +36,7 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
@@ -46,8 +47,6 @@ import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -93,27 +92,28 @@ public class CopyPasteTrowelItem extends BaseTrowelItem {
     // ------------------------------- use ----------------------------------
 
     @Override
-    public InteractionResult use(Level level, Player player, InteractionHand hand) {
-        if (level.isClientSide()) return InteractionResult.SUCCESS;
+    public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
+        if (level.isClientSide()) return InteractionResultHolder.success(stack);
         CompoundTag tag = getCustomTag(stack);
 
         if (player.isShiftKeyDown()) {
             clearAll(stack);
             player.displayClientMessage(Component.literal("Trowel cleared."), true);
-            return InteractionResult.SUCCESS;
+            return InteractionResultHolder.success(stack);
         }
 
         if (tag.contains("blocks")) {
+            ListTag blocks = tag.getList("blocks", Tag.TAG_COMPOUND);
             player.displayClientMessage(Component.literal(
-                    "Holding " + tag.getList("blocks").map(ListTag::size).orElse(0) +
+                    "Holding " + blocks.size() +
                             " blocks. Click a surface to paste (rotation follows your facing). Sneak-click to clear."), true);
         } else if (tag.contains("pos1_x")) {
             player.displayClientMessage(Component.literal("Point A set. Click the opposite corner to copy."), true);
         } else {
             player.displayClientMessage(Component.literal("Click two corners to copy a region."), true);
         }
-        return InteractionResult.PASS;
+        return InteractionResultHolder.pass(stack);
     }
 
     @Override
@@ -152,9 +152,9 @@ public class CopyPasteTrowelItem extends BaseTrowelItem {
         if (!hasCopy) {
             // --- Click 2: corner B -> snapshot ---
             BlockPos pos1 = new BlockPos(
-                    tag.getInt("pos1_x").orElse(0),
-                    tag.getInt("pos1_y").orElse(0),
-                    tag.getInt("pos1_z").orElse(0));
+                    tag.getInt("pos1_x"),
+                    tag.getInt("pos1_y"),
+                    tag.getInt("pos1_z"));
             return finishCopy(level, stack, pos1, clicked, player)
                     ? InteractionResult.SUCCESS : InteractionResult.FAIL;
         }
@@ -213,10 +213,10 @@ public class CopyPasteTrowelItem extends BaseTrowelItem {
 
     private void paste(Level level, ItemStack stack, UseOnContext context, Player player) {
         CompoundTag tag = getCustomTag(stack);
-        ListTag blocks = tag.getList("blocks").orElseGet(ListTag::new);
+        ListTag blocks = tag.getList("blocks", Tag.TAG_COMPOUND);
         if (blocks.isEmpty()) return;
 
-        Rotation rot = rotationFor(tag.getInt("copy_dir").orElse(0), dirIndex(player.getDirection()));
+        Rotation rot = rotationFor(tag.getInt("copy_dir"), dirIndex(player.getDirection()));
         BlockPos origin = context.getClickedPos().relative(context.getClickedFace());
         HolderGetter<Block> lookup = level.registryAccess().lookup(Registries.BLOCK).orElseThrow();
 
@@ -225,17 +225,17 @@ public class CopyPasteTrowelItem extends BaseTrowelItem {
 
         for (Tag t : blocks) {
             CompoundTag e = (CompoundTag) t;
-            int dx = e.getInt("x").orElse(0);
-            int dy = e.getInt("y").orElse(0);
-            int dz = e.getInt("z").orElse(0);
+            int dx = e.getInt("x");
+            int dy = e.getInt("y");
+            int dz = e.getInt("z");
 
             int[] off = rotateOffset(dx, dz, rot);
             BlockPos target = origin.offset(off[0], dy, off[1]);
 
             BlockState oldState = level.getBlockState(target);
 
-            BlockState state = NbtUtils.readBlockState(lookup, e.getCompound("state").orElseGet(CompoundTag::new))
-                    .rotate(level, target, rot);
+            BlockState state = NbtUtils.readBlockState(lookup, e.getCompound("state"))
+                    .rotate(rot);
 
             // Record the old state before overwriting
             if (!oldState.equals(state)) {
@@ -244,11 +244,12 @@ public class CopyPasteTrowelItem extends BaseTrowelItem {
 
             level.setBlock(target, state, 3);
 
-            CompoundTag beTag = e.getCompound("be").orElse(null);
-            BlockEntity be = level.getBlockEntity(target);
-            if (be != null && beTag != null) {
-                if (!loadBlockEntityWithTag(be, beTag)) {
-                    // fallback: skip BE data or log
+            if (e.contains("be")) {
+                CompoundTag beTag = e.getCompound("be");
+                BlockEntity be = level.getBlockEntity(target);
+                if (be != null && beTag != null) {
+                    be.loadWithComponents(beTag, level.registryAccess());
+                    be.setChanged();
                 }
             }
 
@@ -270,58 +271,5 @@ public class CopyPasteTrowelItem extends BaseTrowelItem {
             nbt.remove("pos1_x"); nbt.remove("pos1_y"); nbt.remove("pos1_z");
             nbt.remove("blocks"); nbt.remove("copy_dir");
         });
-    }
-
-    // ---------- reflection helpers (unchanged) ----------
-
-    private static Object makeValueInputFromTag(CompoundTag tag) {
-        try {
-            try {
-                Class<?> cls = Class.forName("net.minecraft.world.level.storage.ValueInputTag");
-                try {
-                    Method m = cls.getMethod("of", CompoundTag.class);
-                    return m.invoke(null, tag);
-                } catch (NoSuchMethodException ignored) {}
-                try {
-                    Method m = cls.getMethod("create", CompoundTag.class);
-                    return m.invoke(null, tag);
-                } catch (NoSuchMethodException ignored) {}
-                try {
-                    Constructor<?> ctor = cls.getConstructor(CompoundTag.class);
-                    return ctor.newInstance(tag);
-                } catch (NoSuchMethodException ignored) {}
-            } catch (ClassNotFoundException ignored) {}
-
-            try {
-                Class<?> valueInputCls = Class.forName("net.minecraft.world.level.storage.ValueInput");
-                Method of = valueInputCls.getMethod("of", CompoundTag.class);
-                return of.invoke(null, tag);
-            } catch (ClassNotFoundException | NoSuchMethodException ignored) {}
-
-        } catch (ReflectiveOperationException ex) {
-            ex.printStackTrace();
-        }
-        return null;
-    }
-
-    private static boolean loadBlockEntityWithTag(BlockEntity be, CompoundTag beTag) {
-        try {
-            Object valueInput = makeValueInputFromTag(beTag);
-            if (valueInput == null) return false;
-
-            Class<?> valueInputCls = Class.forName("net.minecraft.world.level.storage.ValueInput");
-            Method loadMethod = be.getClass().getMethod("loadWithComponents", valueInputCls);
-            loadMethod.invoke(be, valueInput);
-
-            try {
-                Method setChanged = be.getClass().getMethod("setChanged");
-                setChanged.invoke(be);
-            } catch (NoSuchMethodException ignored) {}
-
-            return true;
-        } catch (ReflectiveOperationException ex) {
-            ex.printStackTrace();
-            return false;
-        }
     }
 }

@@ -1,12 +1,12 @@
 modLoader="javafml"
-loaderVersion="[61,)"
+loaderVersion="[52.1.0,)"
 license="GNU GENERAL PUBLIC LICENSE"
 #issueTrackerURL="https://github.com/MyOrganization/MyMod/" #optional
 #clientSideOnly=true #optional, default=false
 
 [[mods]]
 modId="trowelanderror"
-version="1.4.1"
+version="${file.jarVersion}"
 displayName = "Trowel & Error"
 #updateJSONURL="https://example.com/updates.json" #optional
 #displayURL="https://example.com/" #optional
@@ -21,13 +21,13 @@ wonderful, but abandoned Buildhelper Wands mod.'''
 [[dependencies.trowelanderror]] #recommended
     modId="forge"
     mandatory=true
-    versionRange="[61,)"
+    versionRange="[52.1.16,)"
     ordering="NONE"
     side="BOTH"
 
 [[dependencies.trowelanderror]] #recommended
     modId="minecraft"
     mandatory=true
-    versionRange="[1.21.11,1.22,)"
+    versionRange="[1.21.1,1.22)"
     ordering="NONE"
     side="BOTH"

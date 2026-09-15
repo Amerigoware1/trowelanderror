@@ -27,7 +27,7 @@ import com.trowelanderror.item.DiggerTrowelItem;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.event.network.CustomPayloadEvent;
@@ -35,7 +35,7 @@ import net.minecraftforge.event.network.CustomPayloadEvent;
 public record SetDiggerSettingsPacket(DiggerSettings settings) implements CustomPacketPayload {
 
     public static final Type<SetDiggerSettingsPacket> TYPE =
-            new Type<>(Identifier.fromNamespaceAndPath("trowelanderror", "set_digger_settings"));
+            new Type<>(ResourceLocation.fromNamespaceAndPath("trowelanderror", "set_digger_settings"));
 
     public static final StreamCodec<FriendlyByteBuf, SetDiggerSettingsPacket> STREAM_CODEC =
             StreamCodec.composite(

@@ -30,6 +30,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
@@ -49,13 +50,13 @@ public class AirTrowelItem extends BaseTrowelItem {
     }
 
     @Override
-    public InteractionResult use(Level level, Player player, InteractionHand hand) {
+    public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
 
         BlockHitResult hitResult = rayTraceWithFluids(level, player);
 
         if (hitResult.getType() != HitResult.Type.BLOCK) {
-            return InteractionResult.PASS;
+            return InteractionResultHolder.pass(stack);
         }
 
         BlockPos clickedPos = hitResult.getBlockPos();
@@ -79,9 +80,9 @@ public class AirTrowelItem extends BaseTrowelItem {
 
             } else {
                 BlockPos posA = new BlockPos(
-                        tag.getInt("PointA_X").orElse(0),
-                        tag.getInt("PointA_Y").orElse(0),
-                        tag.getInt("PointA_Z").orElse(0)
+                        tag.getInt("PointA_X"),
+                        tag.getInt("PointA_Y"),
+                        tag.getInt("PointA_Z")
                 );
 
                 BlockPos posB = clickedPos;
@@ -102,7 +103,7 @@ public class AirTrowelItem extends BaseTrowelItem {
             }
         }
 
-        return InteractionResult.SUCCESS;
+        return InteractionResultHolder.success(stack);
     }
 
     private int clearRegion(Level level, BlockPos posA, BlockPos posB) {

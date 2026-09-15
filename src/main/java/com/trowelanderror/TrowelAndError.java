@@ -26,15 +26,16 @@ import com.mojang.logging.LogUtils;
 import com.trowelanderror.item.ModItems;
 import com.trowelanderror.network.SetDiggerSettingsPacket;
 import com.trowelanderror.setup.ModDataComponents;
-import com.trowelanderror.util.VariantConfig;   // <--- ADD THIS IMPORT
+import com.trowelanderror.util.VariantConfig;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
 import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.eventbus.api.listener.SubscribeEvent;  // corrected import (was "listener")
+import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
@@ -46,6 +47,7 @@ import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 import org.slf4j.Logger;
+
 import java.io.InputStream;
 
 @Mod(TrowelAndError.MODID)
@@ -53,7 +55,9 @@ public final class TrowelAndError {
     public static final String MODID = "trowelanderror";
     public static final Logger LOGGER = LogUtils.getLogger();
 
-    public static final DeferredRegister<Block> BLOCKS = DeferredRegister.create(ForgeRegistries.BLOCKS, MODID);
+    public static final DeferredRegister<Block> BLOCKS =
+            DeferredRegister.create(ForgeRegistries.BLOCKS, MODID);
+
     public static final DeferredRegister<CreativeModeTab> CREATIVE_MODE_TABS =
             DeferredRegister.create(Registries.CREATIVE_MODE_TAB, MODID);
 
@@ -82,13 +86,21 @@ public final class TrowelAndError {
                     })
                     .build());
 
-    public TrowelAndError(FMLJavaModLoadingContext context) {
-        var modBusGroup = context.getModBusGroup();
+    public static final SimpleChannel CHANNEL = ChannelBuilder
+            .named(ResourceLocation.fromNamespaceAndPath(MODID, "main"))
+            .networkProtocolVersion(1)
+            .clientAcceptedVersions((status, version) -> true)
+            .serverAcceptedVersions((status, version) -> true)
+            .simpleChannel();
 
-        // Register items, blocks, and tabs
-        ModItems.ITEMS.register(modBusGroup);
-        BLOCKS.register(modBusGroup);
-        CREATIVE_MODE_TABS.register(modBusGroup);
+    public TrowelAndError(FMLJavaModLoadingContext context) {
+        IEventBus modBus = context.getModEventBus();
+
+        // Register deferred registers
+        ModItems.ITEMS.register(modBus);
+        BLOCKS.register(modBus);
+        CREATIVE_MODE_TABS.register(modBus);
+        ModDataComponents.DATA_COMPONENTS.register(modBus);
 
         // Load variant config
         try (InputStream is = getClass().getResourceAsStream("/data/trowelanderror/variants_config.json")) {
@@ -101,20 +113,17 @@ public final class TrowelAndError {
             LOGGER.error("Failed to load variants config", e);
         }
 
-        // Register data components
-        ModDataComponents.DATA_COMPONENTS.register(modBusGroup);
+        // Lifecycle events
+        modBus.addListener(this::commonSetup);
 
-        // Common setup
-        FMLCommonSetupEvent.getBus(modBusGroup).addListener(this::commonSetup);
-
-        // Forge config
+        // Config
         context.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
     }
 
     private void commonSetup(final FMLCommonSetupEvent event) {
         LOGGER.info("Trowel & Error common setup complete.");
 
-        // Register network packets here
+        // Register network packets
         CHANNEL.messageBuilder(SetDiggerSettingsPacket.class)
                 .encoder((pkt, buf) -> SetDiggerSettingsPacket.STREAM_CODEC.encode(buf, pkt))
                 .decoder(buf -> SetDiggerSettingsPacket.STREAM_CODEC.decode(buf))
@@ -122,18 +131,11 @@ public final class TrowelAndError {
                 .add();
     }
 
-    @Mod.EventBusSubscriber(modid = MODID, value = Dist.CLIENT)
+    @Mod.EventBusSubscriber(modid = MODID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.MOD)
     public static class ClientModEvents {
         @SubscribeEvent
         public static void onClientSetup(FMLClientSetupEvent event) {
             LOGGER.info("Trowel & Error client setup complete.");
         }
     }
-
-    public static final SimpleChannel CHANNEL = ChannelBuilder
-            .named(Identifier.fromNamespaceAndPath("trowelanderror", "main"))
-            .networkProtocolVersion(1)
-            .clientAcceptedVersions((status, version) -> true)
-            .serverAcceptedVersions((status, version) -> true)
-            .simpleChannel();
 }

@@ -32,7 +32,7 @@ plugins {
 }
 
 version = mod_version
-group = 'com.example.trowelanderror'
+group = 'com.trowelanderror'
 
 // Mojang ships Java 21 to end users in 1.20.5+, so your mod should target Java 21.
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
@@ -41,7 +41,7 @@ java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 minecraft {
-    mappings channel: 'official', version: '1.21.11'
+    mappings channel: 'official', version: '1.21.1'
 
     runs {
         configureEach {
@@ -75,12 +75,20 @@ repositories {
 }
 
 dependencies {
-    implementation minecraft.dependency('net.minecraftforge:forge:1.21.11-61.2.1')
+    implementation minecraft.dependency('net.minecraftforge:forge:1.21.1-52.1.16')
     annotationProcessor 'net.minecraftforge:eventbus-validator:7.0.5'
+    configurations {
+        annotationProcessor {
+            exclude group: 'net.minecraftforge', module: 'eventbus-validator'
+        }
+    }
 }
 
 tasks.withType(JavaCompile).configureEach {
     // Use the UTF-8 charset for Java compilation
     // This is done by default in Java 18+, but this ensures it no matter the Java or Gradle version
     options.encoding = 'UTF-8'
+}
+compileJava {
+    options.compilerArgs << "-Aeventbus.check.disable=true"
 }

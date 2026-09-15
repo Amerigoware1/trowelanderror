@@ -29,9 +29,10 @@ import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
@@ -53,15 +54,16 @@ public class ExchangeTrowelItem extends BaseTrowelItem {
     }
 
     @Override
-    public InteractionResult use(Level level, Player player, InteractionHand hand) {
-        if (level.isClientSide()) return InteractionResult.SUCCESS;
+    public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
+        if (level.isClientSide()) return InteractionResultHolder.success(stack);
+
         if (player.isShiftKeyDown()) {
             clearSelection(stack);
             player.displayClientMessage(Component.literal("Exchange selection cleared."), true);
-            return InteractionResult.SUCCESS;
+            return InteractionResultHolder.success(stack);
         }
-        return InteractionResult.PASS;
+        return InteractionResultHolder.pass(stack);
     }
 
     @Override
@@ -78,8 +80,8 @@ public class ExchangeTrowelItem extends BaseTrowelItem {
 
         CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
 
-        String sourceId = tag.getString("source_block").orElse("");
-        String targetId = tag.getString("target_block").orElse("");
+        String sourceId = tag.getString("source_block");
+        String targetId = tag.getString("target_block");
         boolean hasPos2 = tag.contains("pos2_x");
 
         // --- STATE 0: No source → set source and Point A ---
@@ -118,16 +120,14 @@ public class ExchangeTrowelItem extends BaseTrowelItem {
             });
 
             BlockPos pos1 = new BlockPos(
-                    tag.getInt("pos1_x").orElse(0),
-                    tag.getInt("pos1_y").orElse(0),
-                    tag.getInt("pos1_z").orElse(0)
+                    tag.getInt("pos1_x"),
+                    tag.getInt("pos1_y"),
+                    tag.getInt("pos1_z")
             );
             BlockPos pos2 = clickedPos;
 
-            Block sourceBlock = BuiltInRegistries.BLOCK.get(Identifier.parse(sourceId))
-                    .map(ref -> ref.value()).orElse(Blocks.AIR);
-            Block targetBlock = BuiltInRegistries.BLOCK.get(Identifier.parse(targetId))
-                    .map(ref -> ref.value()).orElse(Blocks.AIR);
+            Block sourceBlock = BuiltInRegistries.BLOCK.get(ResourceLocation.parse(sourceId));
+            Block targetBlock = BuiltInRegistries.BLOCK.get(ResourceLocation.parse(targetId));
 
             if (sourceBlock == Blocks.AIR || targetBlock == Blocks.AIR) {
                 player.displayClientMessage(Component.literal("Error: Invalid blocks stored. Clearing."), true);
@@ -181,7 +181,6 @@ public class ExchangeTrowelItem extends BaseTrowelItem {
                     BlockPos pos = new BlockPos(x, y, z);
                     BlockState old = level.getBlockState(pos);
 
-                    // Only exchange the source block
                     if (old.getBlock() == sourceBlock) {
                         if (!old.equals(targetState)) {
                             changes.add(new BlockChange(pos, old));
@@ -192,7 +191,6 @@ public class ExchangeTrowelItem extends BaseTrowelItem {
             }
         }
 
-        // Record for Undo Trowel
         if (!changes.isEmpty() && level.getServer() != null) {
             HistoryManager.getInstance(level.getServer())
                     .recordAction("exchange", changes);

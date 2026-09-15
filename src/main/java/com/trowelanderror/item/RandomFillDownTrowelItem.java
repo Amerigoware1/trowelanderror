@@ -103,7 +103,7 @@ public class RandomFillDownTrowelItem extends Item {
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
 
         for (BlockPos startPos : starts) {
-            for (int y = startPos.getY(); y >= level.getMinY() && placed < MAX_FILL_DEPTH; y--) {
+            for (int y = startPos.getY(); y >= level.getMinBuildHeight() && placed < MAX_FILL_DEPTH; y--) {
                 cursor.set(startPos.getX(), y, startPos.getZ());
 
                 if (!isReplaceable(level, cursor)) {

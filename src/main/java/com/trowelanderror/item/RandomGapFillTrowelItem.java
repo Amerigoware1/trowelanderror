@@ -26,14 +26,14 @@ import com.trowelanderror.history.BlockChange;
 import com.trowelanderror.history.HistoryManager;
 import com.trowelanderror.util.VariantConfig;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
@@ -41,11 +41,9 @@ import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.Blocks;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.Random;
 
 public class RandomGapFillTrowelItem extends BaseTrowelItem {
@@ -59,22 +57,39 @@ public class RandomGapFillTrowelItem extends BaseTrowelItem {
 
     // Right‑click on AIR → clear selection (same as before)
     @Override
-    public InteractionResult use(Level level, Player player, InteractionHand hand) {
-        if (level.isClientSide()) return InteractionResult.SUCCESS;
+    public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
-        clearSelection(stack);
-        player.displayClientMessage(Component.literal("Cleared fill selection."), true);
-        return InteractionResult.SUCCESS;
+
+        if (level.isClientSide()) {
+            return InteractionResultHolder.success(stack);
+        }
+
+        CustomData.update(DataComponents.CUSTOM_DATA, stack, nbt -> {
+            nbt.remove("pos1_x");
+            nbt.remove("pos1_y");
+            nbt.remove("pos1_z");
+            nbt.remove("block_id");
+        });
+
+        player.displayClientMessage(
+                Component.literal("Cleared fill selection."),
+                true
+        );
+        return InteractionResultHolder.success(stack);
     }
 
     // Right‑click on BLOCK
     @Override
     public InteractionResult useOn(UseOnContext context) {
         Level level = context.getLevel();
-        if (level.isClientSide()) return InteractionResult.SUCCESS;
+        if (level.isClientSide()) {
+            return InteractionResult.SUCCESS;
+        }
 
         Player player = context.getPlayer();
-        if (player == null) return InteractionResult.PASS;
+        if (player == null) {
+            return InteractionResult.PASS;
+        }
 
         ItemStack stack = context.getItemInHand();
         BlockPos clickedPos = context.getClickedPos();
@@ -100,26 +115,24 @@ public class RandomGapFillTrowelItem extends BaseTrowelItem {
 
         // --- Second click: fill with random variants ---
         BlockPos pos1 = new BlockPos(
-                tag.getInt("pos1_x").orElse(0),
-                tag.getInt("pos1_y").orElse(0),
-                tag.getInt("pos1_z").orElse(0)
+                tag.getInt("pos1_x"),
+                tag.getInt("pos1_y"),
+                tag.getInt("pos1_z")
         );
         BlockPos pos2 = clickedPos;
 
-        String blockId = tag.getString("block_id").orElse("");
+        String blockId = tag.getString("block_id");
         if (blockId.isEmpty()) {
             player.displayClientMessage(Component.literal("No fill block stored – please set Point A again."), true);
             clearSelection(stack);
             return InteractionResult.FAIL;
         }
 
-        Optional<Holder.Reference<Block>> fillBlock = BuiltInRegistries.BLOCK.get(Identifier.parse(blockId));
-        BlockState baseState = fillBlock
-                .map(ref -> ref.value().defaultBlockState())
-                .orElse(Blocks.AIR.defaultBlockState());
+        Block fillBlock = BuiltInRegistries.BLOCK.get(ResourceLocation.parse(blockId));
+        BlockState fillState = fillBlock.defaultBlockState();
 
         // Perform random fill
-        fillBoxWithVariants(level, pos1, pos2, baseState, player);
+        fillBoxWithVariants(level, pos1, pos2, fillState, player);
 
         clearSelection(stack);
         return InteractionResult.SUCCESS;

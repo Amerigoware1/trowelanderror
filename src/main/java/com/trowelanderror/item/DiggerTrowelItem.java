@@ -29,7 +29,7 @@ import com.trowelanderror.setup.ModDataComponents;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.InteractionResult;
@@ -48,9 +48,9 @@ public class DiggerTrowelItem extends Item {
 
     // #minecraft:ores (vanilla) and #c:ores (the convention tag modded ores use)
     private static final TagKey<Block> VANILLA_ORES =
-            TagKey.create(Registries.BLOCK, Identifier.fromNamespaceAndPath("minecraft", "ores"));
+            TagKey.create(Registries.BLOCK, ResourceLocation.fromNamespaceAndPath("minecraft", "ores"));
     private static final TagKey<Block> COMMON_ORES =
-            TagKey.create(Registries.BLOCK, Identifier.fromNamespaceAndPath("c", "ores"));
+            TagKey.create(Registries.BLOCK, ResourceLocation.fromNamespaceAndPath("c", "ores"));
 
     public DiggerTrowelItem(Properties props) {
         super(props);

@@ -30,6 +30,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -56,8 +57,9 @@ public class SpongeMopItem extends Item {
 
     // Called when right-clicking air or fluid
     @Override
-    public InteractionResult use(Level level, Player player, InteractionHand hand) {
-        if (level.isClientSide()) return InteractionResult.SUCCESS;
+    public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
+        ItemStack stack = player.getItemInHand(hand);
+        if (level.isClientSide()) return InteractionResultHolder.success(stack);
 
         BlockHitResult hit = getPlayerPOVHitResult(level, player, ClipContext.Fluid.ANY);
 
@@ -66,11 +68,11 @@ public class SpongeMopItem extends Item {
             if (drained > 0) {
                 level.playSound(null, hit.getBlockPos(), SoundEvents.SPONGE_ABSORB, SoundSource.BLOCKS, 1.0F, 1.0F);
                 player.displayClientMessage(Component.literal("§eMopped up " + drained + " fluid blocks."), true);
-                return InteractionResult.SUCCESS;
+                return InteractionResultHolder.success(stack);
             }
         }
 
-        return InteractionResult.PASS;
+        return InteractionResultHolder.pass(stack);
     }
 
     // Called when right-clicking a solid block
@@ -99,8 +101,8 @@ public class SpongeMopItem extends Item {
 
         int minX = center.getX() - RADIUS;
         int maxX = center.getX() + RADIUS;
-        int minY = Math.max(level.getMinY(), center.getY() - RADIUS);
-        int maxY = Math.min(level.getMaxY(), center.getY() + RADIUS);
+        int minY = Math.max(level.getMinBuildHeight(), center.getY() - RADIUS);
+        int maxY = Math.min(level.getMaxBuildHeight(), center.getY() + RADIUS);
         int minZ = center.getZ() - RADIUS;
         int maxZ = center.getZ() + RADIUS;
 

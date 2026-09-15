@@ -24,14 +24,14 @@ package com.trowelanderror.item;
 
 import com.trowelanderror.history.BlockChange;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
@@ -39,8 +39,6 @@ import net.minecraft.world.item.context.UseOnContext;   // fixed
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState; // fixed
-import net.minecraft.world.level.block.Blocks;
-import java.util.Optional;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -55,12 +53,13 @@ public class GapFillTrowelItem extends BaseTrowelItem {
 
     // Right‑click on AIR → clear everything
     @Override
-    public InteractionResult use(Level level, Player player, InteractionHand hand) {
+    public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
+        ItemStack stack = player.getItemInHand(hand);
+
         if (level.isClientSide()) {
-            return InteractionResult.SUCCESS;
+            return InteractionResultHolder.success(stack);
         }
 
-        ItemStack stack = player.getItemInHand(hand);
         CustomData.update(DataComponents.CUSTOM_DATA, stack, nbt -> {
             nbt.remove("pos1_x");
             nbt.remove("pos1_y");
@@ -72,7 +71,7 @@ public class GapFillTrowelItem extends BaseTrowelItem {
                 Component.literal("Cleared fill selection."),
                 true
         );
-        return InteractionResult.SUCCESS;
+        return InteractionResultHolder.success(stack);
     }
 
     // Right‑click on a BLOCK
@@ -117,14 +116,14 @@ public class GapFillTrowelItem extends BaseTrowelItem {
 
         // --- Point A exists → this is the second click (Point B) ---
         BlockPos pos1 = new BlockPos(
-                tag.getInt("pos1_x").orElse(0),
-                tag.getInt("pos1_y").orElse(0),
-                tag.getInt("pos1_z").orElse(0)
+                tag.getInt("pos1_x"),
+                tag.getInt("pos1_y"),
+                tag.getInt("pos1_z")
         );
         BlockPos pos2 = clickedPos;
 
 // Read the stored block ID (getString returns Optional<String>)
-        String blockId = tag.getString("block_id").orElse("");
+        String blockId = tag.getString("block_id");
         if (blockId.isEmpty()) {
             player.displayClientMessage(
                     Component.literal("No fill block stored – please set Point A again."),
@@ -134,13 +133,8 @@ public class GapFillTrowelItem extends BaseTrowelItem {
             return InteractionResult.FAIL;
         }
 
-// 1. Lookup returns Optional<Holder.Reference<Block>>
-        Optional<Holder.Reference<Block>> fillBlock = BuiltInRegistries.BLOCK.get(Identifier.parse(blockId));
-
-// 2. Unwrap the Optional, get the value from the Reference, and get its state
-        BlockState fillState = fillBlock
-                .map(ref -> ref.value().defaultBlockState())
-                .orElse(Blocks.AIR.defaultBlockState()); // Fallback if the block ID is invalid
+        Block fillBlock = BuiltInRegistries.BLOCK.get(ResourceLocation.parse(blockId));
+        BlockState fillState = fillBlock.defaultBlockState();
 
 // Perform the fill
         fillBox(level, pos1, pos2, fillState, player);

@@ -25,7 +25,7 @@ package com.trowelanderror.history;
 import com.google.gson.*;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.Property;
@@ -70,11 +70,8 @@ public class BlockChangeAdapter implements JsonSerializer<BlockChange>, JsonDese
         // BlockState
         String blockId = obj.get("block").getAsString();
 
-        // ★ Fixed line
-        Block block = BuiltInRegistries.BLOCK.getValue(Identifier.parse(blockId));
-        if (block == null) {
-            throw new JsonParseException("Unknown block: " + blockId);
-        }
+        Block block = BuiltInRegistries.BLOCK.getOptional(ResourceLocation.parse(blockId))
+                .orElseThrow(() -> new JsonParseException("Unknown block: " + blockId));
 
         BlockState state = block.defaultBlockState();
 

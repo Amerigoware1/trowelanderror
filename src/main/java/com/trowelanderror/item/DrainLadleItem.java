@@ -32,6 +32,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -55,18 +56,17 @@ public class DrainLadleItem extends Item {
     }
 
     @Override
-    public InteractionResult use(Level level, Player player, InteractionHand hand) {
-        if (level.isClientSide()) return InteractionResult.SUCCESS;
-
+    public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
+        if (level.isClientSide()) return InteractionResultHolder.success(stack);
 
         if (player.isShiftKeyDown()) {
             clearSelection(stack);
             player.displayClientMessage(Component.literal("Drain Ladle selection cleared."), true);
-            return InteractionResult.SUCCESS;
+            return InteractionResultHolder.success(stack);
         }
 
-        return InteractionResult.PASS;
+        return InteractionResultHolder.pass(stack);
     }
 
     @Override
@@ -99,9 +99,9 @@ public class DrainLadleItem extends Item {
 
         // Point B → drain
         BlockPos pos1 = new BlockPos(
-                tag.getInt("pos1_x").orElse(0),
-                tag.getInt("pos1_y").orElse(0),
-                tag.getInt("pos1_z").orElse(0)
+                tag.getInt("pos1_x"),
+                tag.getInt("pos1_y"),
+                tag.getInt("pos1_z")
         );
         BlockPos pos2 = clickedPos;
 
